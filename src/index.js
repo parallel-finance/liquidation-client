@@ -1,10 +1,31 @@
 const { ApiPromise, WsProvider } = require('@polkadot/api');
+const { PARALLEL } = require('../config/endpoints.json');
+const { sleep } = require('./utils.js');
 const { types, typesAlias } = require('../config/types.json');
 const rpc = require('../config/rpc.json');
 
+async function liquidity_executor(_api) {
+  while(true) {
+    await sleep(5000);
+  }
+}
+
+async function scan_accounts(api) {
+  while(true) {
+    const accountBorrows = await api.query.loans.accountBorrows.entries();
+    await Promise.all(
+      accountBorrows.map(async (_, accountId) => {
+        const lastBlockHash = await api.rpc.chain.getFinalizedHead();
+        const _accountLiquidity = await api.rpc.loans.getAccountLiquidity(accountId, lastBlockHash);
+        await sleep(5000);
+      })
+    );
+  }
+}
+
 async function main () {
   // Initialise the provider to connect to the local node
-  const provider = new WsProvider('wss://testnet-rpc.parallel.fi');
+  const provider = new WsProvider(PARALLEL);
 
   // Create the API and wait until ready
   const api = await ApiPromise.create({ provider, types, typesAlias, rpc});
@@ -17,6 +38,8 @@ async function main () {
   ]);
 
   console.log(`You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
+
+  await Promise.all([liquidity_executor(api), scan_accounts(api)]);
 
   // Get all borrowers by scanning the AccountBorrows of each active market. 
   // Perform every 5 minutes asynchronously.
