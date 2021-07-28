@@ -1,4 +1,7 @@
 .vscode
 .idea
 
+.DS_Store
 node_modules
+
+yarn-error.log
