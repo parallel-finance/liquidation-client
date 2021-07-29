@@ -1,5 +1,5 @@
-import {ApiPromise, WsProvider} from '@polkadot/api';
-import {options} from '@parallel-finance/api';
+import { ApiPromise, WsProvider } from '@polkadot/api';
+import { options } from '@parallel-finance/api';
 import '@parallel-finance/types';
 import {
   AccountId,
@@ -9,75 +9,60 @@ import {
   Liquidity,
   Market,
   Rate,
-  Shortfall
+  Shortfall,
+  Deposits
 } from '@parallel-finance/types/interfaces';
 import { BN } from '@polkadot/util';
 
-import * as _ from 'lodash'
+import * as _ from 'lodash';
 
-const {PARALLEL} = require('../config/endpoints.json');
+const { PARALLEL } = require('../config/endpoints.json');
 
 async function scanShortfallBorrowers(api: ApiPromise): Promise<Array<AccountId>> {
-  console.log("scan shortfall borrowers");
+  console.log('scan shortfall borrowers');
 
   const accountBorrows = await api.query.loans.accountBorrows.entries();
   let borrowers = accountBorrows.map(([key]) => {
     const [_, accountId] = key.args;
-    return accountId
+    return accountId;
   });
   borrowers = _.uniqWith(borrowers, _.isEqual);
 
   const asyncFilter = async (arr: Array<AccountId>, predicate: (a: AccountId) => Promise<boolean>) => {
     const results = await Promise.all(arr.map(predicate));
     return arr.filter((_v, index) => results[index]);
-  }
+  };
 
   // console.log("shortfallBorrowers count", shortfallBorrowers.length);
   // console.log("borrowers count", borrowers.length);
   return await asyncFilter(borrowers, async (accountId) => {
     const accountLiquidity: [Liquidity, Shortfall] = await api.rpc.loans.getAccountLiquidity(accountId, null);
     // console.log("borrower", accountId.toHuman(), "shortfall", accountLiquidity[1].toHuman());
-    return !accountLiquidity[1].toBn().isZero()
-  })
+    return !accountLiquidity[1].toBn().isZero();
+  });
 }
 
 type CollateralMisc = {
-  currencyId: CurrencyId
-  value: BN
-  market: Market
-}
+  currencyId: CurrencyId;
+  value: BN;
+  market: Market;
+};
 
 type DebitMisc = {
-  currencyId: CurrencyId
-  value: BN
-}
+  currencyId: CurrencyId;
+  value: BN;
+};
 
 type LiquidationParam = {
-  liquidateToken: CurrencyId
-  collateralToken: CurrencyId
-  repay: BN
-}
+  liquidateToken: CurrencyId;
+  collateralToken: CurrencyId;
+  repay: BN;
+};
 
-function getCollateralMisc(accountId: AccountId, currencyId: CurrencyId, market: Market): CollateralMisc {
-
-  return {
-    currencyId: currencyId,
-    value: new BN(0),
-    market: market
-  }
-}
-
-function getDebitMisc(accountId: AccountId, currencyId: CurrencyId): DebitMisc {
-  return {
-    currencyId: currencyId,
-    value: new BN(0)
-  }
-}
-
-async function calcLiquidationParam(api: ApiPromise, accountId: AccountId) : Promise<LiquidationParam> {
+async function calcLiquidationParam(api: ApiPromise, accountId: AccountId): Promise<LiquidationParam> {
   const markets = await api.query.loans.markets.entries();
   if (markets.length == 0) {
-    await Promise.reject(new Error('no markets'))
+    await Promise.reject(new Error('no markets'));
   }
 
   // TODO: filter the active markets
@@ -86,36 +71,60 @@ async function calcLiquidationParam(api: ApiPromise, accountId: AccountId) : Pro
       const [currencyId] = key.args;
       const market = value as unknown as Market;
       const exchangeRate = await api.query.loans.exchangeRate(currencyId);
-      // const [price, time] = await api.rpc.oracle.getValue('Aggregated', currencyId);
-      return getCollateralMisc(accountId, currencyId, market)
+      const price = await api.rpc.oracle.getValue('Aggregated', currencyId);
+      const parsedPrices = price.unwrap();
+      const deposit = await api.query.loans.accountDeposits(currencyId, accountId);
+      return {
+        currencyId: currencyId,
+        value: deposit.voucherBalance
+          .toBn()
+          .mul(parsedPrices.value.toBn())
+          .div(new BN('1e18'))
+          .mul(exchangeRate.toBn())
+          .div(new BN('1e18')),
+        market: market
+      };
     })
-  )
+  );
 
   const debitMiscList = await Promise.all(
     markets.map(async ([key, value]) => {
       const [currencyId] = key.args;
-      return getDebitMisc(accountId, currencyId)
+      const snapshot = await api.query.loans.accountBorrows(currencyId, accountId);
+      const borrowIndex = await api.query.loans.borrowIndex(currencyId);
+      const price = await api.rpc.oracle.getValue('Aggregated', currencyId);
+      const parsedPrices = price.unwrap();
+
+      return {
+        currencyId: currencyId,
+        value: borrowIndex
+          .toBn()
+          .div(snapshot.borrowIndex.toBn())
+          .mul(snapshot.principal)
+          .div(new BN('1e18'))
+          .mul(parsedPrices.value.toBn())
+      };
     })
-  )
+  );
   const liquidity: [Liquidity, Shortfall] = await api.rpc.loans.getAccountLiquidity(accountId, null);
   const bestCollateral = _.maxBy(collateralMiscList, (misc) => misc.value);
-  if (!bestCollateral) await Promise.reject(new Error('no bestCollateral'))
+  if (!bestCollateral) await Promise.reject(new Error('no bestCollateral'));
   console.log('bestCollateral', JSON.stringify(bestCollateral));
   const bestDebit = _.maxBy(debitMiscList, (misc) => misc.value);
-  if (!bestDebit) await Promise.reject(new Error('no bestDebit'))
+  if (!bestDebit) await Promise.reject(new Error('no bestDebit'));
   console.log('bestDebit', JSON.stringify(bestDebit));
   const repayValue = _.min([
     bestCollateral.value.mul(new BN('1e18')).div(bestCollateral.market.liquidateIncentive),
     bestDebit.value,
     liquidity[1].toBn()
-  ])
+  ]);
   // TODO: repay = repayValue / liquidateTokenPrice
 
   return {
     liquidateToken: bestDebit.currencyId,
     collateralToken: bestCollateral.currencyId,
     repay: repayValue
-  }
+  };
 }
 
 async function main() {
@@ -123,7 +132,7 @@ async function main() {
   const provider = new WsProvider(PARALLEL);
 
   // Create the API and wait until ready
-  const api = await ApiPromise.create(options({provider}));
+  const api = await ApiPromise.create(options({ provider }));
 
   // Retrieve the chain & node information information via rpc calls
   const [chain, nodeName, nodeVersion] = await Promise.all([
@@ -135,7 +144,7 @@ async function main() {
   console.log(`You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
 
   const shortfallBorrowers = await scanShortfallBorrowers(api);
-  console.log("shortfallBorrowers count", shortfallBorrowers.length);
+  console.log('shortfallBorrowers count', shortfallBorrowers.length);
 
   const liquidationParams = await Promise.all(
     shortfallBorrowers.map(async (accountId) => {
@@ -143,8 +152,7 @@ async function main() {
     })
   );
 
-  console.log(liquidationParams)
-
+  console.log(liquidationParams);
 
   // Get all borrowers by scanning the AccountBorrows of each active market.
   // Perform every 5 minutes asynchronously.
@@ -168,4 +176,6 @@ async function main() {
   // Liquidate borrow.
 }
 
-main().catch(console.error).finally(() => process.exit());
+main()
+  .catch(console.error)
+  .finally(() => process.exit());
