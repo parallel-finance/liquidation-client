@@ -13,7 +13,9 @@
   "dependencies": {
     "@acala-network/api": "^1.0.2-6",
     "@parallel-finance/api": "^1.0.1-4",
-    "@polkadot/api": "^4.14.1"
+    "@polkadot/api": "^4.14.1",
+    "@types/lodash": "^4.14.171",
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "mocha": "^9.0.2",
