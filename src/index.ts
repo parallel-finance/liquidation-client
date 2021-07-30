@@ -1,4 +1,5 @@
-import { ApiPromise, WsProvider } from '@polkadot/api';
+import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
+import { KeyringPair } from '@polkadot/keyring/types';
 import { options } from '@parallel-finance/api';
 import '@parallel-finance/types';
 import {
@@ -12,6 +13,8 @@ import {
   Shortfall,
   Deposits
 } from '@parallel-finance/types/interfaces';
+import { cryptoWaitReady } from '@polkadot/util-crypto';
+
 import { BN } from '@polkadot/util';
 
 import * as _ from 'lodash';
@@ -42,18 +45,8 @@ async function scanShortfallBorrowers(api: ApiPromise): Promise<Array<AccountId>
   });
 }
 
-type CollateralMisc = {
-  currencyId: CurrencyId;
-  value: BN;
-  market: Market;
-};
-
-type DebitMisc = {
-  currencyId: CurrencyId;
-  value: BN;
-};
-
 type LiquidationParam = {
+  borrower: AccountId;
   liquidateToken: CurrencyId;
   collateralToken: CurrencyId;
   repay: BN;
@@ -121,6 +114,7 @@ async function calcLiquidationParam(api: ApiPromise, accountId: AccountId): Prom
   // TODO: repay = repayValue / liquidateTokenPrice
 
   return {
+    borrower: accountId,
     liquidateToken: bestDebit.currencyId,
     collateralToken: bestCollateral.currencyId,
     repay: repayValue
@@ -148,11 +142,25 @@ async function main() {
 
   const liquidationParams = await Promise.all(
     shortfallBorrowers.map(async (accountId) => {
-      await calcLiquidationParam(api, accountId);
+      return await calcLiquidationParam(api, accountId);
     })
   );
 
-  console.log(liquidationParams);
+  console.log('liquidationParams', liquidationParams);
+
+  await cryptoWaitReady();
+
+  const keyring = new Keyring({ type: 'sr25519' });
+  const alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
+  console.log(`alice: ${alice.address}`);
+
+  await Promise.all(
+    liquidationParams.map(async (param) => {
+      await api.tx.loans
+        .liquidateBorrow(param.borrower, param.liquidateToken, param.repay, param.collateralToken)
+        .signAndSend(alice);
+    })
+  );
 
   // Get all borrowers by scanning the AccountBorrows of each active market.
   // Perform every 5 minutes asynchronously.

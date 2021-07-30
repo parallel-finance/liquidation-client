@@ -17,7 +17,8 @@
     "@parallel-finance/api": "^1.0.1-4",
     "@polkadot/api": "^4.14.1",
     "@types/lodash": "^4.14.171",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "inquirer": "^8.1.2"
   },
   "devDependencies": {
     "mocha": "^9.0.2",
