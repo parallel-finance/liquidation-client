@@ -1,0 +1,11 @@
+{
+  "DOT": 10,
+  "KSM": 12,
+  "USDT": 6,
+  "xKSM": 12,
+  "xDOT": 10,
+
+  "rate": 18,
+  "ratio": 6,
+  "oracle": 18
+}
