@@ -125,15 +125,15 @@ async function calcLiquidationParam(api: ApiPromise, accountId: AccountId): Prom
   );
 
   // const liquidity: [Liquidity, Shortfall] = await api.rpc.loans.getAccountLiquidity(accountId, null);
-  const bestCollateral = _.maxBy(collateralMiscList, (misc) => misc.value);
+  const bestCollateral = _.maxBy(collateralMiscList, (misc) => misc.value.toBuffer());
   console.log('bestCollateral', JSON.stringify(bestCollateral));
-  const bestDebt = _.maxBy(debitMiscList, (misc) => misc.value);
+  const bestDebt = _.maxBy(debitMiscList, (misc) => misc.value.toBuffer());
   console.log('bestDebt', JSON.stringify(bestDebt));
 
-  const repayValue = _.min([
+  const repayValue = BN.min(
     bestCollateral.value.mul(new BN(BN1E18)).div(bestCollateral.market.liquidateIncentive.toBn()),
     bestDebt.value.mul(bestDebt.market.closeFactor.toBn()).div(BN1E6)
-  ]);
+  );
 
   const debtPrice = getUnitPrice(prices, bestDebt.currencyId);
   const repay = repayValue.mul(BN1E18).div(debtPrice);
@@ -162,20 +162,6 @@ async function main() {
 
   console.log(`You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
 
-  // const marketKeys = await api.query.loans.markets.keys();
-  // if (marketKeys.length == 0) {
-  //   await Promise.reject(new Error('no markets'));
-  // }
-  //
-  // const prices = await getOraclePrices(api);
-  //
-  // console.log('prices', JSON.stringify(prices));
-  //
-  // marketKeys.map(({ args: [currencyId] }) => {
-  //   const price = getUnitPrice(prices, currencyId);
-  //   console.log(`price ${currencyId}`, price.toString());
-  // });
-
   const shortfallBorrowers = await scanShortfallBorrowers(api);
   console.log('shortfallBorrowers count', shortfallBorrowers.length);
 
@@ -195,13 +181,13 @@ async function main() {
   await cryptoWaitReady();
 
   const keyring = new Keyring({ type: 'sr25519' });
-  const alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
-  console.log(`alice: ${alice.address}`);
+  const alice = keyring.addFromUri('//Bob//stash', { name: 'Bob//stash default' });
+  console.log(`Bob//stash: ${alice.address}`);
 
   await Promise.all(
     liquidationParams.map(async (param) => {
       await api.tx.loans
-        .liquidateBorrow(param.borrower, param.liquidateToken, 909094627978, param.collateralToken)
+        .liquidateBorrow(param.borrower, param.liquidateToken, param.repay, param.collateralToken)
         .signAndSend(alice);
     })
   );
