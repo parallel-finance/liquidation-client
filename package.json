@@ -16,6 +16,7 @@
     "@parallel-finance/api": "^1.1.1",
     "@polkadot/api": "^5.2.1",
     "@types/lodash": "^4.14.171",
+    "commander": "^8.1.0",
     "inquirer": "^8.1.2",
     "lodash": "^4.17.21"
   },
