@@ -1,7 +1,7 @@
 import { ApiPromise } from '@polkadot/api';
 import type { u8 } from '@polkadot/types';
 import '@parallel-finance/types';
-import { AccountId, CurrencyId, Liquidity, Shortfall, TimestampedValue } from '@parallel-finance/types/interfaces';
+import { AccountId, CurrencyId, Liquidity, Shortfall, TimestampedValue, Deposits } from '@parallel-finance/types/interfaces';
 import * as _ from 'lodash';
 import { BN } from '@polkadot/util';
 import { KeyringPair } from '@polkadot/keyring/types';
@@ -84,10 +84,14 @@ export async function calcLiquidationParam(api: ApiPromise, accountId: AccountId
       const [currencyId] = key.args;
       const exchangeRate = await api.query.loans.exchangeRate(currencyId);
       const price = getUnitPrice(prices, currencyId);
-      const deposit = await api.query.loans.accountDeposits(currencyId, accountId);
+      const deposit: Deposits = await api.query.loans.accountDeposits(currencyId, accountId);
+      let value = new BN(0);
+      if (deposit.isCollateral.isTrue) {
+        value = deposit.voucherBalance.toBn().mul(price).div(BN1E18).mul(exchangeRate.toBn()).div(BN1E18);
+      }
       return {
-        currencyId: currencyId,
-        value: deposit.voucherBalance.toBn().mul(price).div(BN1E18).mul(exchangeRate.toBn()).div(BN1E18),
+        currencyId,
+        value,
         market: market.unwrapOrDefault()
       };
     })
