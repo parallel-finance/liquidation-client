@@ -1,35 +1,38 @@
 {
-  "name": "liquidation-client",
-  "version": "0.1.0",
-  "description": "liquidation client for parallel money market",
-  "main": "index.js",
-  "repository": "https://github.com/parallel-finance/liquidation-client",
-  "author": "Parallel Finance Developer",
-  "license": "Apache-2.0",
-  "scripts": {
-    "start": "ts-node src/index.ts",
-    "test": "mocha",
-    "fmt": "prettier 'src/**/*.ts' --write",
-    "lint": "eslint . --ext .ts --fix"
-  },
-  "dependencies": {
-    "@parallel-finance/api": "^1.1.1",
-    "@polkadot/api": "^5.2.1",
-    "@types/lodash": "^4.14.171",
-    "commander": "^8.1.0",
-    "inquirer": "^8.1.2",
-    "lodash": "^4.17.21"
-  },
-  "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^4.28.3",
-    "@typescript-eslint/parser": "^4.28.3",
-    "eslint": "^7.31.0",
-    "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-prettier": "^3.4.0",
-    "lint-staged": "^11.0.1",
-    "mocha": "^9.0.2",
-    "prettier": "^2.3.2",
-    "ts-node": "^10.1.0",
-    "typescript": "^4.3.5"
-  }
+    "name": "liquidation-client",
+    "version": "0.1.0",
+    "description": "liquidation client for parallel money market",
+    "main": "index.js",
+    "repository": "https://github.com/parallel-finance/liquidation-client",
+    "author": "Parallel Finance Developer",
+    "license": "Apache-2.0",
+    "scripts": {
+        "start": "ts-node src/index.ts",
+        "test": "mocha",
+        "fmt": "prettier 'src/**/*.ts' --write",
+        "lint": "eslint . --ext .ts --fix"
+    },
+    "dependencies": {
+        "@parallel-finance/api": "^1.4.2",
+        "@polkadot/api": "^6.3.1",
+        "@types/lodash": "^4.14.171",
+        "@types/node": "^16.11.3",
+        "commander": "^8.1.0",
+        "inquirer": "^8.1.2",
+        "interval-promise": "^1.4.0",
+        "lodash": "^4.17.21",
+        "ts-node": "^10.4.0",
+        "winston": "^3.3.3"
+    },
+    "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^4.28.3",
+        "@typescript-eslint/parser": "^4.28.3",
+        "eslint": "^7.31.0",
+        "eslint-config-prettier": "^8.3.0",
+        "eslint-plugin-prettier": "^3.4.0",
+        "lint-staged": "^11.0.1",
+        "mocha": "^9.0.2",
+        "prettier": "^2.3.2",
+        "typescript": "^4.3.5"
+    }
 }

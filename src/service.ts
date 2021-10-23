@@ -1,7 +1,9 @@
 import { ApiPromise } from '@polkadot/api';
 import type { u8 } from '@polkadot/types';
 import '@parallel-finance/types';
-import { AccountId, CurrencyId, Liquidity, Shortfall, TimestampedValue, Deposits } from '@parallel-finance/types/interfaces';
+import { AccountId, CurrencyId, Liquidity, Shortfall, Deposits, Market, Rate, BorrowSnapshot } from '@parallel-finance/types/interfaces';
+import { PalletAssetsAssetMetadata } from '@polkadot/types/lookup'
+import { TimestampedValue } from '@open-web3/orml-types/interfaces/oracle';
 import * as _ from 'lodash';
 import { BN } from '@polkadot/util';
 import { KeyringPair } from '@polkadot/keyring/types';
@@ -30,12 +32,16 @@ async function getOraclePrices(api: ApiPromise): Promise<Array<OraclePrice>> {
 
   return await Promise.all(
     marketKeys.map(async ({ args: [currencyId] }) => {
-      const price = await api.rpc.oracle.getValue('Aggregated', currencyId);
+      let assetId = currencyId as CurrencyId;
+      const price = await api.rpc.oracle.getValue('Aggregated', assetId);
       const parallelPrice = price.unwrapOrDefault() as unknown as TimestampedValue;
+      const assetMeta = await api.query.assets.metadata(assetId);
+      
+      let decimal = (assetMeta as PalletAssetsAssetMetadata).decimals;
       return {
-        currencyId: currencyId.toString(),
-        price: parallelPrice.value.price.toBn(),
-        decimal: parallelPrice.value.decimal
+        currencyId: assetId.toString(),
+        price: parallelPrice.value.toBn(),
+        decimal
       };
     })
   );
@@ -60,11 +66,11 @@ export async function scanShortfallBorrowers(api: ApiPromise): Promise<Array<Acc
     return arr.filter((_v, index) => results[index]);
   };
 
-  // console.log("shortfallBorrowers count", shortfallBorrowers.length);
+  // console.log("shortfallBorrowers count", borrowers.length);
   // console.log("borrowers count", borrowers.length);
-  return await asyncFilter(borrowers, async (accountId) => {
+  return await asyncFilter(borrowers as AccountId[], async (accountId) => {
     const accountLiquidity: [Liquidity, Shortfall] = await api.rpc.loans.getAccountLiquidity(accountId, null);
-    // console.log("borrower", accountId.toHuman(), "shortfall", accountLiquidity[1].toHuman());
+    console.log("borrower", accountId.toHuman(), "shortfall", accountLiquidity[1].toHuman());
     return !accountLiquidity[1].toBn().isZero();
   });
 }
@@ -82,17 +88,20 @@ export async function calcLiquidationParam(api: ApiPromise, accountId: AccountId
   const collateralMiscList = await Promise.all(
     markets.map(async ([key, market], a, c) => {
       const [currencyId] = key.args;
-      const exchangeRate = await api.query.loans.exchangeRate(currencyId);
-      const price = getUnitPrice(prices, currencyId);
-      const deposit: Deposits = await api.query.loans.accountDeposits(currencyId, accountId);
+      let assetId = currencyId as CurrencyId;
+      let marketValue = market as Market; 
+      const exchangeRate = await api.query.loans.exchangeRate(assetId);
+      const price = getUnitPrice(prices, currencyId as CurrencyId);
+      const deposit = (await api.query.loans.accountDeposits(assetId, accountId)) as Deposits;
+
       let value = new BN(0);
       if (deposit.isCollateral.isTrue) {
-        value = deposit.voucherBalance.toBn().mul(price).div(BN1E18).mul(exchangeRate.toBn()).div(BN1E18);
+        value = deposit.voucherBalance.toBn().mul(price).div(BN1E18).mul(exchangeRate as Rate).div(BN1E18);
       }
       return {
-        currencyId,
+        currencyId: assetId,
         value,
-        market: market.unwrapOrDefault()
+        market: marketValue
       };
     })
   );
@@ -100,18 +109,22 @@ export async function calcLiquidationParam(api: ApiPromise, accountId: AccountId
   const debitMiscList = await Promise.all(
     markets.map(async ([key, market]) => {
       const [currencyId] = key.args;
-      const snapshot = await api.query.loans.accountBorrows(currencyId, accountId);
-      const borrowIndex = await api.query.loans.borrowIndex(currencyId);
-      const price = getUnitPrice(prices, currencyId);
+      let assetId = currencyId as CurrencyId;
+      let marketValue = market as Market;
+      
+      const snapshot = (await api.query.loans.accountBorrows(currencyId, accountId)) as BorrowSnapshot;
+      const borrowIndex = (await api.query.loans.borrowIndex(currencyId)) as Rate;
+      const price = getUnitPrice(prices, assetId);
 
       let assetValue = new BN(0);
       if (!snapshot.borrowIndex.isZero()) {
         assetValue = borrowIndex.div(snapshot.borrowIndex.toBn()).mul(snapshot.principal).mul(price).div(BN1E18);
       }
+
       return {
-        currencyId,
+        currencyId: assetId,
         value: assetValue,
-        market: market.unwrapOrDefault()
+        market: marketValue,
       };
     })
   );
@@ -158,12 +171,6 @@ export async function liquidateBorrow(api: ApiPromise, signer: KeyringPair) {
     console.log('collateralToken', param.collateralToken.toHuman());
     console.log('repay', param.repay.toString());
   });
-
-  await Promise.all(
-    liquidationParams.map(async (param) => {
-      await api.tx.loans
-        .liquidateBorrow(param.borrower, param.liquidateToken, param.repay, param.collateralToken)
-        .signAndSend(signer);
-    })
-  );
+  
+  return liquidationParams
 }

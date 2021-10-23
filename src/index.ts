@@ -6,13 +6,16 @@ import { PARALLEL } from '../config/endpoints.json';
 import { liquidateBorrow } from './service';
 import inquirer from 'inquirer';
 import { Command } from 'commander';
+import interval from 'interval-promise'
+import { logger } from './logger'
 
 const program = new Command();
+const LISTEN_INTERVAL = 500
 
 program
-  .name('stake-client')
+  .name('liquidation-client')
   .version('1.0.0.', '-v, --vers', 'output the current version')
-  .option('-s, --server <string>', 'The Parachain API endpoint', 'ws://127.0.0.1:9947')
+  .option('-s, --server <string>', 'The Parachain API endpoint', 'ws://127.0.0.1:9944')
   .option('-s, --seed <string>', 'The account seed to use', '//Bob//stash')
   .option('-i, --interactive [boolean]', 'Input seed interactively', false);
 
@@ -52,7 +55,8 @@ async function main() {
       : seed
   );
 
-  await liquidateBorrow(api, signer);
+  // await liquidateBorrow(api, signer);
+  liquidate(liquidateBorrow, api, signer)
 
   // Get all borrowers by scanning the AccountBorrows of each active market.
   // Perform every 5 minutes asynchronously.
@@ -74,6 +78,38 @@ async function main() {
   // repayAmount = min(liquidator's balance of A, closeFactor * A's borrow balance of borrower, The total value of B(borrower's) / B's price)
 
   // Liquidate borrow.
+}
+
+async function liquidate(fn: any, api: any, signer: any): Promise<void> {
+  console.log(`Start liquidating`)
+  interval(
+    async () => {
+      console.log(`interval`)
+      const tasks = await fn
+      if (!tasks) {
+        logger.debug(`There is no task to be liquidated <-> [${tasks}]`)
+        console.log(`There is no task to be liquidated <-> [${tasks}])`)
+        return
+      }
+      logger.debug(`Liquidation tasks <-> [${tasks}]`)
+      console.log(`Liquidation tasks <-> [${tasks}]`)
+    
+      await Promise.all(
+        tasks.map(async (task) => {
+          const { borrower, liquidateToken, repay, collateralToken } = task
+          logger.debug(`task::handling <-> [${task}]`)
+          await api.tx.loans
+            .liquidateBorrow(borrower, liquidateToken, repay, collateralToken)
+            .signAndSend(signer)
+            .catch(logger.error);
+        })
+      );
+    },
+    LISTEN_INTERVAL,
+    {
+      stopOnError: false
+    }
+  )
 }
 
 main()
