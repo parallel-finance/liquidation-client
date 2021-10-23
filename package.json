@@ -13,8 +13,8 @@
     "lint": "eslint . --ext .ts --fix"
   },
   "dependencies": {
-    "@parallel-finance/api": "^1.1.1",
-    "@polkadot/api": "^5.2.1",
+    "@parallel-finance/api": "^1.4.2",
+    "@polkadot/api": "^6.3.1",
     "@types/lodash": "^4.14.171",
     "commander": "^8.1.0",
     "inquirer": "^8.1.2",
