@@ -1,20 +1,19 @@
 import { EraIndex, RewardDestination } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { AnyJson } from '@polkadot/types/types'
-
-export enum ApiType {
-    PARA = 'PARA'
-}
+import { AccountId } from '@parallel-finance/types/interfaces'
 
 export enum ParaPalletType {
     Loans = 'loans'
 }
 
+
 export enum ParaCallType {
-    Loans = 'liquidateBorrow'
+  LiquidateBorrow = "liquidateBorrow"
 }
 
 export type ApiParam =
+  | AccountId
   | number
   | string
   | BN
@@ -24,7 +23,6 @@ export type ApiParam =
 
 
 export type ApiTask = {
-    type: ApiType
     pallet: ParaPalletType
     call: ParaCallType
     params: ApiParam[]

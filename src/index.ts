@@ -18,7 +18,7 @@ program
   .name('liquidation-client')
   .version('1.0.0.', '-v, --vers', 'output the current version')
   .option('-s, --server <string>', 'The Parachain API endpoint', 'ws://127.0.0.1:9944')
-  .option('-s, --seed <string>', 'The account seed to use', '//Bob//stash')
+  .option('-s, --seed <string>', 'The account seed to use', '//Alice//stash')
   .option('-i, --interactive [boolean]', 'Input seed interactively', false);
 
 program.parse();
@@ -59,30 +59,6 @@ async function main() {
 
   const service = new ApiService({ server, agent });
   await service.connect()
-  
-  // setPromiseInterval(
-  //   async () => {
-  //     logger.debug(`interval`)
-  //     const tasks = await liquidateBorrow(api);
-  //     if (!tasks) {
-  //       logger.debug(`There is no task to be liquidated <-> [${tasks}]`)
-  //       return
-  //     }
-  //     logger.debug(`Liquidation tasks <-> [${tasks}]`)
-    
-  //     await Promise.all(
-  //       tasks.map(async (task) => {
-  //         const { borrower, liquidateToken, repay, collateralToken } = task
-  //         logger.debug(`task::handling <-> [${task}]`)
-  //         // await api.tx.loans
-  //         //   .liquidateBorrow(borrower, liquidateToken, repay, collateralToken)
-  //         //   .signAndSend(signer)
-  //         //   .catch(logger.error);
-  //       })
-  //     );
-  //   },
-  //   LISTEN_INTERVAL
-  // )
 
   // Get all borrowers by scanning the AccountBorrows of each active market.
   // Perform every 5 minutes asynchronously.
@@ -107,7 +83,7 @@ async function main() {
 }
 
 main().catch((e) => {
-  logger.error(e)
+  logger.debug(e)
   process.exit(-1)
 })
 

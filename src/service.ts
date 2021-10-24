@@ -10,10 +10,11 @@ import { BN } from '@polkadot/util';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { options } from '@parallel-finance/api'
 import { typesBundle } from '@parallel-finance/type-definitions'
-import { ApiTask, ApiType } from './model';
+import { ApiParam, ApiTask, ParaCallType, ParaPalletType } from './model';
 import { logger } from './logger'
 import setPromiseInterval from 'set-promise-interval'
 
+const NativeCurrencyId = 0
 const BN1E18 = new BN('1000000000000000000');
 const BN1E6 = new BN('1000000');
 
@@ -38,7 +39,7 @@ export class ApiService {
   public paraApi!: ApiPromise
   private server: string
   private agent: KeyringPair
-  private LISTEN_INTERVAL: number = 5
+  private LISTEN_INTERVAL: number = 6000
   private killDelay: number = 1000 * 60
   private killTimer: NodeJS.Timeout | null
 
@@ -58,11 +59,18 @@ export class ApiService {
       })
     )
 
+    // Retrieve the chain & node information information via rpc calls
+    const [chain, nodeName, nodeVersion] = await Promise.all([
+      this.paraApi.rpc.system.chain(),
+      this.paraApi.rpc.system.name(),
+      this.paraApi.rpc.system.version()
+    ]);
+    console.log(`You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
+
     await this.process()
   }
-
-  private async signAndSendTx(task: ApiTask) {
-    const { type, pallet, call, params } = task
+  private async signAndSendTxWithSudo(task: ApiTask) {
+    const { pallet, call, params } = task
     const api = this.paraApi;
     const tx = get(api.tx, `${pallet}.${call}`)
     if (!tx) {
@@ -92,6 +100,7 @@ export class ApiService {
                     : { name: Arithmetic }
                   return reject(name)
                 })
+                logger.debug('tx::failed')
               }
 
               if (method === 'ExtrinsicSuccess') {
@@ -105,6 +114,23 @@ export class ApiService {
     })
   }
 
+  private async sendLiquidationTx(task: ApiTask) {
+    const { pallet, call, params } = task
+    const api = this.paraApi;
+    const tx = get(api.tx, `${pallet}.${call}`)
+    if (!tx) {
+      logger.error(`Invalid task: api.tx.${pallet}.${call}`)
+      return
+    }
+
+    return new Promise<void>(() => {
+      api.tx.loans
+            .liquidateBorrow(params[0], params[1], params[2], params[3])
+            .signAndSend(this.agent)
+            .catch(logger.error);
+    })
+  }
+
   public async process(): Promise<void> {
     setPromiseInterval(
       async () => {
@@ -114,16 +140,19 @@ export class ApiService {
           logger.debug(`There is no task to be liquidated <-> [${tasks}]`)
           return
         }
-        logger.debug(`Liquidation tasks <-> [${tasks}]`)
+        logger.debug(`Liquidation tasks <-> [${tasks.length}]`)
 
         await Promise.all(
           tasks.map(async (task) => {
             const { borrower, liquidateToken, repay, collateralToken } = task
-            logger.debug(`task::handling <-> [${task}]`)
-            // await api.tx.loans
-            //   .liquidateBorrow(borrower, liquidateToken, repay, collateralToken)
-            //   .signAndSend(signer)
-            //   .catch(logger.error);
+            let params: ApiParam[] = [borrower, liquidateToken, repay, collateralToken]
+            logger.debug(`task::handling <-> [${borrower}, ${liquidateToken}, ${repay}, ${collateralToken}]`)
+            const tx: ApiTask = { 
+              pallet: ParaPalletType.Loans,
+              call: ParaCallType.LiquidateBorrow,
+              params: params
+            }
+            await this.sendLiquidationTx(tx)
           })
         );
       },
@@ -145,6 +174,7 @@ export class ApiService {
         const assetMeta = await api.query.assets.metadata(assetId);
 
         let decimal = (assetMeta as PalletAssetsAssetMetadata).decimals;
+        decimal = (assetId == NativeCurrencyId as unknown as CurrencyId) ? 12 as unknown as u8 : decimal;
         return {
           currencyId: assetId.toString(),
           price: parallelPrice.value.toBn(),
@@ -156,21 +186,22 @@ export class ApiService {
 
   private getUnitPrice(prices: Array<OraclePrice>, currencyId: CurrencyId): BN {
     const oraclePrice = find(prices, { currencyId: currencyId.toString() });
-    return oraclePrice.price.mul(BN1E18).div(new BN(10 ** + oraclePrice.decimal));
+    return oraclePrice.price.div(new BN(10 ** + oraclePrice.decimal));
+  }
+
+  private mulPrice(value: BN, prices: Array<OraclePrice>, currencyId: CurrencyId): BN {
+    const oraclePrice = find(prices, { currencyId: currencyId.toString() });
+    console.log('oraclePrice.decimal')
+    console.log(oraclePrice.decimal)
+    
+    console.log('value.mul(new BN(10 ** + oraclePrice.decimal))')
+    console.log(value.mul(new BN(10 ** + oraclePrice.decimal)))
+    
+    return value.mul(new BN(10 ** + oraclePrice.decimal));
   }
 
   private async scanShortfallBorrowers(): Promise<Array<AccountId>> {
     console.log('scan shortfall borrowers');
-
-    // Retrieve the chain & node information information via rpc calls
-    const [chain, nodeName, nodeVersion] = await Promise.all([
-      this.paraApi.rpc.system.chain(),
-      this.paraApi.rpc.system.name(),
-      this.paraApi.rpc.system.version()
-    ]);
-    console.log(`You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
-
-    // console.log(this.server)
     const borrowerKeys = await this.paraApi.query.loans.accountBorrows.keys();
     let borrowers = borrowerKeys.map(({ args: [_, accountId] }) => {
       return accountId;
@@ -183,12 +214,12 @@ export class ApiService {
       return arr.filter((_v, index) => results[index]);
     };
 
-    console.log("shortfallBorrowers count", borrowers.length);
-    console.log("borrowers count", borrowers.length);
+    // console.log("shortfallBorrowers count", borrowers.length);
+    // console.log("borrowers count", borrowers.length);
     return await asyncFilter(borrowers as AccountId[], async (accountId) => {
       const accountLiquidity: [Liquidity, Shortfall] = await this.paraApi.rpc.loans.getAccountLiquidity(accountId, null);
-      console.log("borrower", accountId.toHuman(), "shortfall", accountLiquidity[1].toHuman());
-      return !((accountLiquidity[1] as unknown as BN).isZero());
+      console.log("borrower", accountId.toHuman(), "borrowLimitLeft", accountLiquidity[0].toHuman(), "shortfall", accountLiquidity[1].toHuman());
+      return (accountLiquidity[1].toBn()).cmp(new BN(0)) != 0;
     });
   }
 
@@ -207,19 +238,20 @@ export class ApiService {
       markets.map(async ([key, market], a, c) => {
         const [currencyId] = key.args;
         let assetId = currencyId as CurrencyId;
-        let marketValue = market as Market;
+
         const exchangeRate = await api.query.loans.exchangeRate(assetId);
         const price = this.getUnitPrice(prices, currencyId as CurrencyId);
         const deposit = (await api.query.loans.accountDeposits(assetId, accountId)) as Deposits;
 
         let value = new BN(0);
         if (deposit.isCollateral.isTrue) {
-          value = deposit.voucherBalance.toBn().mul(price).div(BN1E18).mul(exchangeRate as Rate).div(BN1E18);
+          value = deposit.voucherBalance.toBn().mul(price).mul(exchangeRate as Rate).div(BN1E18);
         }
+        
         return {
           currencyId: assetId,
           value,
-          market: marketValue
+          market: market.value,
         };
       })
     );
@@ -228,46 +260,64 @@ export class ApiService {
       markets.map(async ([key, market]) => {
         const [currencyId] = key.args;
         let assetId = currencyId as CurrencyId;
-        let marketValue = market as Market;
 
         const snapshot = (await api.query.loans.accountBorrows(currencyId, accountId)) as BorrowSnapshot;
         const borrowIndex = (await api.query.loans.borrowIndex(currencyId)) as Rate;
         const price = this.getUnitPrice(prices, assetId);
 
         let assetValue = new BN(0);
-        console.log('type: ', typeof(snapshot))
-        console.log('type: ', typeof(snapshot.borrowIndex))
-        console.log('type: ', typeof(snapshot.borrowIndex.toBn()))
-        console.log('type: ', typeof(snapshot.borrowIndex.toBn() as unknown as BN))
-        if (!((snapshot.borrowIndex.toBn() as unknown as BN).isZero())) {
+        if ((snapshot.borrowIndex.toBn()).cmp(new BN(0)) != 0) {
           assetValue = borrowIndex.div(snapshot.borrowIndex.toBn()).mul(snapshot.principal).mul(price).div(BN1E18);
-          console.log(assetValue)
         }
+
         return {
           currencyId: assetId,
           value: assetValue,
-          market: marketValue,
+          market: market.value,
         };
       })
     );
-
+    
     // const liquidity: [Liquidity, Shortfall] = await api.rpc.loans.getAccountLiquidity(accountId, null);
-    const bestCollateral = maxBy(collateralMiscList, (misc) => misc.value.toBuffer());
+    const bestCollateral: { currencyId: CurrencyId
+      value: BN,
+      market: Market,
+    } = maxBy(collateralMiscList, (misc) => misc.value.toBuffer());
     // console.log('bestCollateral', JSON.stringify(bestCollateral));
     const bestDebt = maxBy(debitMiscList, (misc) => misc.value.toBuffer());
     // console.log('bestDebt', JSON.stringify(bestDebt));
 
-    const liquidateIncentive = (bestCollateral.market as unknown as Market).liquidateIncentive as unknown as BN;
-    const closeFactor = (bestDebt.market as unknown as Market).closeFactor as unknown as BN;
+    const liquidateIncentive = bestCollateral.market.liquidateIncentive.toBn();
+    const closeFactor = bestDebt.market.closeFactor.toBn();
+
+    console.log('bestCollateral.value')
+    console.log(bestCollateral.value.toString())
+    console.log('bestDebt.value')
+    console.log(bestDebt.value.toString())
     
+    // Example:
+    // Collateral.value = 1 KSM = 375e18
+    // Debt.value = 150 HK0 * price(2) * = 300e12 * 1e18
+    // repayValue = min(1.1 * Collateral, Debt * 0.5)
     const repayValue = BN.min(
-      bestCollateral.value.mul(new BN(BN1E18)).div(liquidateIncentive),
+      bestCollateral.value.mul(BN1E18).div(liquidateIncentive).div(BN1E6),
       bestDebt.value.mul(closeFactor).div(BN1E6)
     );
 
-    const debtPrice = this.getUnitPrice(prices, bestDebt.currencyId);
-    const repay = repayValue.mul(BN1E18).div(debtPrice);
+    console.log('repayValue')
+    console.log(repayValue.toString())
 
+    const debtPrice = this.getUnitPrice(prices, bestDebt.currencyId).div(BN1E6);
+    console.log('debtPrice')
+    console.log(debtPrice.toString())
+  
+    console.log('repay')
+    console.log(repayValue.div(debtPrice).toString())
+  
+    const repay = this.mulPrice(repayValue.div(debtPrice), prices, bestDebt.currencyId);
+    console.log('repay')
+    console.log(repay.toString())
+  
     return {
       borrower: accountId,
       liquidateToken: bestDebt.currencyId,
@@ -280,7 +330,7 @@ export class ApiService {
     const shortfallBorrowers = await this.scanShortfallBorrowers();
 
     console.log('shortfallBorrowers count', shortfallBorrowers.length);
-    console.log('shortfallBorrowers: \n', shortfallBorrowers);
+    // console.log('shortfallBorrowers: \n', shortfallBorrowers);
 
     return await Promise.all(
       shortfallBorrowers.map(async (accountId) => {
@@ -293,10 +343,12 @@ export class ApiService {
     const liquidationParams = await this.calcLiquidationParams();
 
     liquidationParams.forEach((param) => {
+      console.log('---------------task pramas---------------');
       console.log('borrower', param.borrower.toHuman());
       console.log('liquidateToken', param.liquidateToken.toHuman());
       console.log('collateralToken', param.collateralToken.toHuman());
       console.log('repay', param.repay.toString());
+      console.log('-----------------------------------------');
     });
 
     return liquidationParams
