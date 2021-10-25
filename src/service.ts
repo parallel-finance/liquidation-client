@@ -1,6 +1,5 @@
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
 import type { u8 } from '@polkadot/types';
-// import '@parallel-finance/types';
 import { AccountId, CurrencyId, Liquidity, Shortfall, Deposits, Market, Rate, Ratio, BorrowSnapshot } from '@parallel-finance/types/interfaces';
 import { PalletAssetsAssetMetadata } from '@polkadot/types/lookup'
 import { TimestampedValue } from '@open-web3/orml-types/interfaces/oracle';
@@ -12,11 +11,7 @@ import { typesBundle } from '@parallel-finance/type-definitions'
 import { ApiParam, ApiTask, LiquidationParam, LiquidationTask, OraclePrice, ParaCallType, ParaPalletType } from './model';
 import { logger } from './logger'
 import setPromiseInterval from 'set-promise-interval'
-
-// import { Collection } from 'lokijs';
-// import loki = require('lokijs');
 import db, { Database } from './db'
-import { resolve } from 'path/posix';
 
 const NativeCurrencyId = 0
 const BN1E18 = new BN('1000000000000000000');
@@ -147,7 +142,7 @@ export class ApiService {
     if (this.db.enoughTask()) {
       const task = borrower ? this.db.getTaskByBorrower(borrower) : this.db.shiftLiquidationParam()
       if (!task) return
-      
+
       await this.sendLiquidationTx(task)
     } else {
       logger.debug('no task to run')

@@ -5,5 +5,8 @@
 node_modules
 
 yarn-error.log
+.yarn/*
 .yarn/cache/*
 src/*.js
+logs/*
+liquidation.json
