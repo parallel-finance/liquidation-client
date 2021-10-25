@@ -21,11 +21,13 @@
         "inquirer": "^8.1.2",
         "interval-promise": "^1.4.0",
         "lodash": "^4.17.21",
+        "lokijs": "^1.5.12",
         "set-promise-interval": "^1.0.8",
         "ts-node": "^10.4.0",
         "winston": "^3.3.3"
     },
     "devDependencies": {
+        "@types/lokijs": "^1.5.7",
         "@typescript-eslint/eslint-plugin": "^4.28.3",
         "@typescript-eslint/parser": "^4.28.3",
         "eslint": "^7.31.0",

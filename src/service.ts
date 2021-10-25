@@ -1,6 +1,6 @@
 import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
 import type { u8 } from '@polkadot/types';
-import '@parallel-finance/types';
+// import '@parallel-finance/types';
 import { AccountId, CurrencyId, Liquidity, Shortfall, Deposits, Market, Rate, Ratio, BorrowSnapshot } from '@parallel-finance/types/interfaces';
 import { PalletAssetsAssetMetadata } from '@polkadot/types/lookup'
 import { TimestampedValue } from '@open-web3/orml-types/interfaces/oracle';
@@ -9,26 +9,18 @@ import { BN } from '@polkadot/util';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { options } from '@parallel-finance/api'
 import { typesBundle } from '@parallel-finance/type-definitions'
-import { ApiParam, ApiTask, ParaCallType, ParaPalletType } from './model';
+import { ApiParam, ApiTask, LiquidationParam, LiquidationTask, OraclePrice, ParaCallType, ParaPalletType } from './model';
 import { logger } from './logger'
 import setPromiseInterval from 'set-promise-interval'
+
+// import { Collection } from 'lokijs';
+// import loki = require('lokijs');
+import db, { Database } from './db'
+import { resolve } from 'path/posix';
 
 const NativeCurrencyId = 0
 const BN1E18 = new BN('1000000000000000000');
 const BN1E6 = new BN('1000000');
-
-type OraclePrice = {
-  currencyId: string;
-  price: BN;
-  decimal: u8;
-};
-
-type LiquidationParam = {
-  borrower: AccountId;
-  liquidateToken: CurrencyId;
-  collateralToken: CurrencyId;
-  repay: BN;
-};
 
 interface ApiServiceConfig {
   server: string
@@ -39,11 +31,12 @@ export class ApiService {
   private server: string
   private agent: KeyringPair
   private LISTEN_INTERVAL: number = 1000 * 60
-  private killDelay: number = 1000 * 60
+  private db: Database;
 
   constructor({ server, agent }: ApiServiceConfig) {
     this.server = server
     this.agent = agent
+    this.db = db;
   }
 
   public async connect(): Promise<void> {
@@ -66,10 +59,6 @@ export class ApiService {
     console.log(`You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
 
     await this.process()
-  }
-  
-  private async taskGenerator(taskName: string, time: number) {
-    
   }
 
   private async signAndSendTxWithSudo(task: ApiTask) {
@@ -117,8 +106,10 @@ export class ApiService {
     })
   }
 
-  private async sendLiquidationTx(task: ApiTask) {
-    const { pallet, call, params } = task
+  private async sendLiquidationTx(task: LiquidationParam) {
+    const apiTask = this.constructLiquidationApiTask(task)
+
+    const { pallet, call, params } = apiTask
     const api = this.paraApi;
     const tx = get(api.tx, `${pallet}.${call}`)
     if (!tx) {
@@ -128,37 +119,68 @@ export class ApiService {
 
     return new Promise<void>(() => {
       api.tx.loans
-            .liquidateBorrow(params[0], params[1], params[2], params[3])
-            .signAndSend(this.agent)
-            .catch(logger.error);
+        .liquidateBorrow(params[0], params[1], params[2], params[3])
+        .signAndSend(this.agent)
+        .catch(logger.error);
     })
   }
 
+  private storeLiquidationTasks(tasks: LiquidationParam[]): void {
+    if (tasks.length == 0) {
+      logger.debug(`There is no task to be liquidated <-> [${tasks}]`)
+      return
+    }
+
+    logger.debug(`Scanned Liquidation tasks <-> [${tasks.length}]`)
+    tasks.forEach((task) => {
+      const liquidationTask: LiquidationTask = {
+        borrower: task.borrower.toString(),
+        liquidateToken: task.liquidateToken,
+        collateralToken: task.collateralToken,
+        repay: task.repay,
+      }
+      this.db.addTask(liquidationTask)
+    })
+  }
+
+  private async liquidate(borrower?: String) {
+    if (this.db.enoughTask()) {
+      const task = borrower ? this.db.getTaskByBorrower(borrower) : this.db.shiftLiquidationParam()
+      if (!task) return
+      
+      await this.sendLiquidationTx(task)
+    } else {
+      logger.debug('no task to run')
+    }
+  }
+
   public async process(): Promise<void> {
-    setPromiseInterval(
-      async () => {
-        logger.debug(`interval`)
-        const tasks = await this.liquidateBorrow();
-        if (tasks.length == 0) {
-          logger.debug(`There is no task to be liquidated <-> [${tasks}]`)
-          return
-        }
-        logger.debug(`Liquidation tasks <-> [${tasks.length}]`)
-        
-        await Promise.all(tasks.map(async (task) => {
-          const { borrower, liquidateToken, repay, collateralToken } = task
-          let params: ApiParam[] = [borrower, liquidateToken, repay, collateralToken]
-          logger.debug(`task::handling <-> [${borrower}, ${liquidateToken}, ${repay}, ${collateralToken}]`)
-          const tx: ApiTask = {
-            pallet: ParaPalletType.Loans,
-            call: ParaCallType.LiquidateBorrow,
-            params: params
-          }
-          await this.sendLiquidationTx(tx)
-        }));
-      },
-      this.LISTEN_INTERVAL
-    )
+    const work = async () => {
+      new Promise<LiquidationParam[]>(async (resolve) => {
+        logger.debug(`--------------------interval--------------------`)
+        const tasks = await this.GetLiquidationTask();
+
+        return resolve(tasks)
+      }).then((tasks) => {
+        this.storeLiquidationTasks(tasks);
+        this.liquidate();
+      })
+    }
+    setPromiseInterval(work, this.LISTEN_INTERVAL)
+  }
+
+  private constructLiquidationApiTask(task: LiquidationParam): ApiTask {
+    const { borrower, liquidateToken, repay, collateralToken } = task
+    let params: ApiParam[] = [borrower, liquidateToken, repay, collateralToken]
+    logger.debug(`task::handling <-> [${borrower}, ${liquidateToken}, ${repay}, ${collateralToken}]`)
+
+    const apiTask: ApiTask = {
+      pallet: ParaPalletType.Loans,
+      call: ParaCallType.LiquidateBorrow,
+      params: params
+    }
+
+    return apiTask
   }
 
   private async getOraclePrices(api: ApiPromise): Promise<Array<OraclePrice>> {
@@ -241,7 +263,7 @@ export class ApiService {
         if (deposit.isCollateral.isTrue) {
           value = deposit.voucherBalance.toBn().mul(price).mul(exchangeRate as Rate).div(BN1E18);
         }
-        
+
         let marketValue: Market = JSON.parse(market.toString());
         return {
           currencyId: assetId,
@@ -272,14 +294,14 @@ export class ApiService {
         };
       })
     );
-    
+
     const bestCollateral: {
       currencyId: CurrencyId
       value: BN,
       market: Market,
     } = maxBy(collateralMiscList, (misc) => misc.value.toBuffer());
     const bestDebt = maxBy(debitMiscList, (misc) => misc.value.toBuffer());
-    
+
     const liquidateIncentive: BN = new BN(String(parseInt(bestCollateral.market.liquidateIncentive.toString(), 16)));
     const closeFactor: BN = new BN(bestDebt.market.closeFactor.toString());
 
@@ -293,7 +315,7 @@ export class ApiService {
     );
     const debtPrice = this.getUnitPrice(prices, bestDebt.currencyId).div(BN1E6);
     const repayAmount = repayValue.div(debtPrice);
-  
+
     return {
       borrower: accountId,
       liquidateToken: bestDebt.currencyId,
@@ -314,7 +336,7 @@ export class ApiService {
     );
   }
 
-  private async liquidateBorrow() {
+  private async GetLiquidationTask(): Promise<LiquidationParam[]> {
     const liquidationParams = await this.calcLiquidationParams();
 
     liquidationParams.forEach((param) => {
