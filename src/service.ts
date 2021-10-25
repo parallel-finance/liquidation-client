@@ -258,7 +258,6 @@ export class ApiService {
         if (deposit.isCollateral.isTrue) {
           value = deposit.voucherBalance.toBn().mul(price).mul(exchangeRate as Rate).div(BN1E18);
         }
-
         let marketValue: Market = JSON.parse(market.toString());
         return {
           currencyId: assetId,
@@ -289,14 +288,12 @@ export class ApiService {
         };
       })
     );
-
     const bestCollateral: {
       currencyId: CurrencyId
       value: BN,
       market: Market,
     } = maxBy(collateralMiscList, (misc) => misc.value.toBuffer());
     const bestDebt = maxBy(debitMiscList, (misc) => misc.value.toBuffer());
-
     const liquidateIncentive: BN = new BN(String(parseInt(bestCollateral.market.liquidateIncentive.toString(), 16)));
     const closeFactor: BN = new BN(bestDebt.market.closeFactor.toString());
 
@@ -310,7 +307,6 @@ export class ApiService {
     );
     const debtPrice = this.getUnitPrice(prices, bestDebt.currencyId).div(BN1E6);
     const repayAmount = repayValue.div(debtPrice);
-
     return {
       borrower: accountId,
       liquidateToken: bestDebt.currencyId,
