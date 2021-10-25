@@ -8,7 +8,7 @@ import inquirer from 'inquirer';
 import { Command } from 'commander';
 import interval from 'interval-promise'
 import setPromiseInterval, { clearPromiseInterval } from 'set-promise-interval'
-import { logger } from './logger'
+import { logger } from './logger';
 import { ApiService } from './service';
 
 const program = new Command();
