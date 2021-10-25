@@ -560,10 +560,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+<<<<<<< HEAD
 "@types/node@npm:^16.11.3":
   version: 16.11.3
   resolution: "@types/node@npm:16.11.3"
   checksum: 8c681ed485acfcf9339ee893ee2bacc1e933b79dd1984945252b82569312cb0da9eb0b33a93e2342317e74ed8a74e99be3731f120c84e9926d3f4548895a867a
+=======
+"@types/node@npm:^16.11.4":
+  version: 16.11.4
+  resolution: "@types/node@npm:16.11.4"
+  checksum: 4182611dd4ae8d32a2f9c6a680f5c8ce0897cbe93fbc74a1351fe1507bd5e5dc53d323c2539cc06b98892486a2485a937a5ca1d106cc2d482f0ee22f8a72f146
+>>>>>>> 447d073ce2892ab8cf50a4d1e77e0b5e8dacca6a
   languageName: node
   linkType: hard
 
@@ -2669,7 +2676,11 @@ fsevents@~2.3.2:
     "@parallel-finance/api": ^1.4.2
     "@polkadot/api": ^6.3.1
     "@types/lodash": ^4.14.171
+<<<<<<< HEAD
     "@types/node": ^16.11.3
+=======
+    "@types/node": ^16.11.4
+>>>>>>> 447d073ce2892ab8cf50a4d1e77e0b5e8dacca6a
     "@typescript-eslint/eslint-plugin": ^4.28.3
     "@typescript-eslint/parser": ^4.28.3
     commander: ^8.1.0
@@ -2682,6 +2693,10 @@ fsevents@~2.3.2:
     lodash: ^4.17.21
     mocha: ^9.0.2
     prettier: ^2.3.2
+<<<<<<< HEAD
+=======
+    set-promise-interval: ^1.0.8
+>>>>>>> 447d073ce2892ab8cf50a4d1e77e0b5e8dacca6a
     ts-node: ^10.4.0
     typescript: ^4.3.5
     winston: ^3.3.3
@@ -3659,6 +3674,16 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
+<<<<<<< HEAD
+=======
+"set-promise-interval@npm:^1.0.8":
+  version: 1.0.8
+  resolution: "set-promise-interval@npm:1.0.8"
+  checksum: 24547d7632cc86bb6b8fbd4d828e9f14b5ede7593b63df662a1e26653e3e5a50036603907e679c3085cee119e1a4babfd1a0c5c9dd656d32a53cc11be907e7de
+  languageName: node
+  linkType: hard
+
+>>>>>>> 447d073ce2892ab8cf50a4d1e77e0b5e8dacca6a
 "sha.js@npm:^2.4.0":
   version: 2.4.11
   resolution: "sha.js@npm:2.4.11"

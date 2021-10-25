@@ -6,3 +6,7 @@ node_modules
 
 yarn-error.log
 .yarn/cache/*
+<<<<<<< HEAD
+=======
+src/*.js
+>>>>>>> 447d073ce2892ab8cf50a4d1e77e0b5e8dacca6a
