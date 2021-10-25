@@ -1,18 +1,12 @@
-import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
+import { Keyring } from '@polkadot/api';
 import '@parallel-finance/types';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
-import { options } from '@parallel-finance/api';
-import { PARALLEL } from '../config/endpoints.json';
-// import { liquidateBorrow } from './service';
 import inquirer from 'inquirer';
 import { Command } from 'commander';
-import interval from 'interval-promise'
-import setPromiseInterval, { clearPromiseInterval } from 'set-promise-interval'
 import { logger } from './logger';
 import { ApiService } from './service';
 
 const program = new Command();
-const LISTEN_INTERVAL = 5000
 
 program
   .name('liquidation-client')
@@ -26,19 +20,6 @@ program.parse();
 const { server, seed, interactive } = program.opts();
 
 async function main() {
-  // // Initialise the provider to connect to the local node
-  // const provider = new WsProvider(server);
-
-  // // Create the API and wait until ready
-  // const api = await ApiPromise.create(options({ provider }));
-
-  // // Retrieve the chain & node information information via rpc calls
-  // const [chain, nodeName, nodeVersion] = await Promise.all([
-  //   api.rpc.system.chain(),
-  //   api.rpc.system.name(),
-  //   api.rpc.system.version()
-  // ]);
-  // logger.debug(`You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
   logger.debug(`::endpoint::> ${server}`);
   await cryptoWaitReady();
 
