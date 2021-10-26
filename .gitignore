@@ -10,3 +10,4 @@ yarn-error.log
 src/*.js
 logs/*
 liquidation.json
+dist/
