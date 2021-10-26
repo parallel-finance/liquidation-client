@@ -7,6 +7,7 @@
     "author": "Parallel Finance Developer",
     "license": "Apache-2.0",
     "scripts": {
+        "build": "tsc",
         "start": "ts-node src/index.ts",
         "test": "mocha",
         "fmt": "prettier 'src/**/*.ts' --write",
