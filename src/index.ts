@@ -11,16 +11,16 @@ const program = new Command();
 program
   .name('liquidation-client')
   .version('1.0.0.', '-v, --vers', 'output the current version')
-  .option('-s, --server <string>', 'The Parachain API endpoint', 'ws://127.0.0.1:9944')
+  .option('-e, --endpoint <string>', 'The Parachain API endpoint', 'ws://127.0.0.1:9947')
   .option('-s, --seed <string>', 'The account seed to use', '//Alice//stash')
   .option('-i, --interactive [boolean]', 'Input seed interactively', false);
 
 program.parse();
 
-const { server, seed, interactive } = program.opts();
+const { endpoint, seed, interactive } = program.opts();
 
 async function main() {
-  logger.debug(`::endpoint::> ${server}`);
+  logger.debug(`::endpoint::> ${endpoint}`);
   await cryptoWaitReady();
 
   const keyring = new Keyring({ type: 'sr25519' });
@@ -38,7 +38,7 @@ async function main() {
       : seed
   );
 
-  const service = new ApiService({ server, agent });
+  const service = new ApiService({ server: endpoint, agent });
   await service.connect();
 
   // Get all borrowers by scanning the AccountBorrows of each active market.
