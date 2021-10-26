@@ -39,7 +39,7 @@ async function main() {
   );
 
   const service = new ApiService({ server, agent });
-  await service.connect()
+  await service.connect();
 
   // Get all borrowers by scanning the AccountBorrows of each active market.
   // Perform every 5 minutes asynchronously.
@@ -64,8 +64,8 @@ async function main() {
 }
 
 main().catch((e) => {
-  logger.debug(e)
-  process.exit(-1)
-})
+  logger.debug(e);
+  process.exit(-1);
+});
 
-process.on('unhandledRejection', (err) => logger.error(err))
+process.on('unhandledRejection', (err) => logger.error(err));

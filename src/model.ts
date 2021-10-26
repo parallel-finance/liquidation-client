@@ -1,50 +1,42 @@
-import { EraIndex, RewardDestination } from '@polkadot/types/interfaces'
-import BN from 'bn.js'
-import { AnyJson } from '@polkadot/types/types'
-import { AccountId } from '@parallel-finance/types/interfaces'
+import { EraIndex, RewardDestination } from '@polkadot/types/interfaces';
+import BN from 'bn.js';
+import { AnyJson } from '@polkadot/types/types';
+import { AccountId } from '@parallel-finance/types/interfaces';
 import type { u8 } from '@polkadot/types';
-import { CurrencyId } from '@parallel-finance/types/interfaces'
+import { CurrencyId } from '@parallel-finance/types/interfaces';
 
 export enum ParaPalletType {
-    Loans = 'loans'
+  Loans = 'loans'
 }
 
 export enum ParaCallType {
-  LiquidateBorrow = "liquidateBorrow"
+  LiquidateBorrow = 'liquidateBorrow'
 }
 
-export type ApiParam =
-  | AccountId
-  | number
-  | string
-  | BN
-  | EraIndex
-  | RewardDestination
-  | AnyJson
-
+export type ApiParam = AccountId | number | string | BN | EraIndex | RewardDestination | AnyJson;
 
 export type ApiTask = {
-    pallet: ParaPalletType
-    call: ParaCallType
-    params: ApiParam[]
-}
+  pallet: ParaPalletType;
+  call: ParaCallType;
+  params: ApiParam[];
+};
 
 export type OraclePrice = {
-    currencyId: string;
-    price: BN;
-    decimal: u8;
+  currencyId: string;
+  price: BN;
+  decimal: u8;
 };
-  
+
 export type LiquidationParam = {
-    borrower: AccountId;
-    liquidateToken: CurrencyId;
-    collateralToken: CurrencyId;
-    repay: BN;
+  borrower: AccountId;
+  liquidateToken: CurrencyId;
+  collateralToken: CurrencyId;
+  repay: BN;
 };
 
 export interface LiquidationTask {
-    borrower: String;
-    liquidateToken: CurrencyId;
-    collateralToken: CurrencyId;
-    repay: BN;
+  borrower: string;
+  liquidateToken: CurrencyId;
+  collateralToken: CurrencyId;
+  repay: BN;
 }

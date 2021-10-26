@@ -13,6 +13,7 @@
   ],
   "rules": {
     "no-console": "error",
-    "prettier/prettier": 2
+    "prettier/prettier": 2,
+    "@typescript-eslint/no-this-alias": ["off"]
   }
 }

@@ -1,14 +1,11 @@
-import winston from 'winston'
+import winston from 'winston';
 
 export const logger = winston.createLogger({
   format: winston.format.combine(
     winston.format.colorize(),
     winston.format.timestamp(),
     winston.format.json(),
-    winston.format.printf(
-      (info) =>
-        `${info.timestamp} | ${info.level}: ${JSON.stringify(info.message)}`
-    )
+    winston.format.printf((info) => `${info.timestamp} | ${info.level}: ${JSON.stringify(info.message)}`)
   ),
   defaultMeta: { service: 'stake-client' },
   transports: [
@@ -19,4 +16,4 @@ export const logger = winston.createLogger({
     new winston.transports.File({ filename: 'logs/combined.log' }),
     new winston.transports.Console({ level: 'debug' })
   ]
-})
+});
