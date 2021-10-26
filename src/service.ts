@@ -281,58 +281,67 @@ export class ApiService {
 
     const prices = await this.getOraclePrices(api);
 
-    // TODO: filter the active markets
-    const collateralMiscList = await Promise.all(
-      markets.map(async ([key, market]) => {
-        const [currencyId] = key.args;
-        const assetId = currencyId as CurrencyId;
+    const collateralMiscList = (
+      await Promise.all(
+        markets.map(async ([key, market]) => {
+          const [currencyId] = key.args;
+          const assetId = currencyId as CurrencyId;
 
-        const exchangeRate = await api.query.loans.exchangeRate(assetId);
-        const price = this.getUnitPrice(prices, currencyId as CurrencyId);
-        const deposit = (await api.query.loans.accountDeposits(assetId, accountId)) as Deposits;
+          const exchangeRate = await api.query.loans.exchangeRate(assetId);
+          const price = this.getUnitPrice(prices, currencyId as CurrencyId);
+          const deposit = (await api.query.loans.accountDeposits(assetId, accountId)) as Deposits;
 
-        let value = new BN(0);
-        if (deposit.isCollateral.isTrue) {
-          value = deposit.voucherBalance
-            .toBn()
-            .mul(price)
-            .mul(exchangeRate as Rate)
-            .div(BN1E18);
-        }
-        return {
-          currencyId: assetId,
-          value,
-          market: JSON.parse(market.toString()) as Market
-        };
-      })
-    );
+          let value = new BN(0);
+          if (deposit.isCollateral.isTrue) {
+            value = deposit.voucherBalance
+              .toBn()
+              .mul(price)
+              .mul(exchangeRate as Rate)
+              .div(BN1E18);
+          }
+          return {
+            currencyId: assetId,
+            value,
+            market: JSON.parse(market.toString()) as Market
+          };
+        })
+      )
+    ).filter((item) => {
+      return item.market.state.toString() == 'Active';
+    });
 
-    const debitMiscList = await Promise.all(
-      markets.map(async ([key, market]) => {
-        const [currencyId] = key.args;
-        const assetId = currencyId as CurrencyId;
+    const debitMiscList = (
+      await Promise.all(
+        markets.map(async ([key, market]) => {
+          const [currencyId] = key.args;
+          const assetId = currencyId as CurrencyId;
 
-        const snapshot = (await api.query.loans.accountBorrows(currencyId, accountId)) as BorrowSnapshot;
-        const borrowIndex = (await api.query.loans.borrowIndex(currencyId)) as Rate;
-        const price = this.getUnitPrice(prices, assetId);
+          const snapshot = (await api.query.loans.accountBorrows(currencyId, accountId)) as BorrowSnapshot;
+          const borrowIndex = (await api.query.loans.borrowIndex(currencyId)) as Rate;
+          const price = this.getUnitPrice(prices, assetId);
 
-        let assetValue = new BN(0);
-        if (snapshot.borrowIndex.toBn().cmp(new BN(0)) != 0) {
-          assetValue = borrowIndex.div(snapshot.borrowIndex.toBn()).mul(snapshot.principal).mul(price);
-        }
+          let assetValue = new BN(0);
+          if (snapshot.borrowIndex.toBn().cmp(new BN(0)) != 0) {
+            assetValue = borrowIndex.div(snapshot.borrowIndex.toBn()).mul(snapshot.principal).mul(price);
+          }
 
-        return {
-          currencyId: assetId,
-          value: assetValue,
-          market: JSON.parse(market.toString()) as Market
-        };
-      })
-    );
+          return {
+            currencyId: assetId,
+            value: assetValue,
+            market: JSON.parse(market.toString()) as Market
+          };
+        })
+      )
+    ).filter((item) => {
+      return item.market.state.toString() == 'Active';
+    });
+
     const bestCollateral: {
       currencyId: CurrencyId;
       value: BN;
       market: Market;
     } = maxBy(collateralMiscList, (misc) => misc.value.toBuffer());
+
     const bestDebt = maxBy(debitMiscList, (misc) => misc.value.toBuffer());
     const liquidateIncentive: BN = new BN(String(parseInt(bestCollateral.market.liquidateIncentive.toString(), 16)));
     const closeFactor: BN = new BN(bestDebt.market.closeFactor.toString());
@@ -366,7 +375,7 @@ export class ApiService {
     );
 
     const validTasks = liquidationParams.filter((param) => {
-      param.repay.cmp(new BN(this.LIQUIDATE_LIMIT)) >= 0;
+      return param.repay.cmp(new BN(this.LIQUIDATE_LIMIT)) >= 0;
     });
 
     const ignoreTasks = liquidationParams.length - validTasks.length;
