@@ -13,11 +13,12 @@ program
   .version('1.0.0.', '-v, --vers', 'output the current version')
   .option('-e, --endpoint <string>', 'The Parachain API endpoint', 'ws://127.0.0.1:9947')
   .option('-s, --seed <string>', 'The account seed to use', '//Alice//stash')
-  .option('-i, --interactive [boolean]', 'Input seed interactively', false);
+  .option('-i, --interactive [boolean]', 'Input seed interactively', false)
+  .option('-t, --target <string>', 'Liquidate target account');
 
 program.parse();
 
-const { endpoint, seed, interactive } = program.opts();
+const { endpoint, seed, interactive, target } = program.opts();
 
 async function main() {
   logger.debug(`::endpoint::> ${endpoint}`);
@@ -34,19 +35,22 @@ async function main() {
               message: 'Input your seed'
             }
           ])
-          .then(({ seed }) => seed)
+          .then(({ seed }) => {
+            logger.debug('successful import of liquidation account')
+            seed
+          })
       : seed
   );
 
-  const service = new ApiService({ server: endpoint, agent });
+  const service = new ApiService({ server: endpoint, agent, target });
   await service.connect();
 
   // Get all borrowers by scanning the AccountBorrows of each active market.
-  // Perform every 5 minutes asynchronously.
+  // Perform every 1 minutes asynchronously.
 
   // Get the (liquidity, shortfall) for each borrower, and put the borrower who has a
-  // positive shortfall into the liquidation message queue. Perform every 5 minutes asynchronously.
-  // Message queue can adopt redis or postgreSQL.
+  // positive shortfall into the liquidation message queue. Perform every 1 minutes asynchronously.
+  // Message queue in this case is a signle file db
 
   // Get borrower from message queue, and get the latest (liquidity, shortfall) for the borrower.
 

@@ -37,20 +37,24 @@ const BN1E6 = new BN('1000000');
 interface ApiServiceConfig {
   server: string;
   agent: KeyringPair;
+  target: string;
 }
 export class ApiService {
   public paraApi!: ApiPromise;
   private server: string;
   private agent: KeyringPair;
   private LISTEN_INTERVAL: number = 1000 * 60;
+  private LIQUIDATE_INTERVAL: number = 1000 * 25;
   // If the repayamount is below the limit, the liquidation process will not be executed.
   private LIQUIDATE_LIMIT = 1e12;
   private db: Database;
+  private target: string;
 
-  constructor({ server, agent }: ApiServiceConfig) {
+  constructor({ server, agent, target }: ApiServiceConfig) {
     this.server = server;
     this.agent = agent;
     this.db = db;
+    this.target = target;
   }
 
   public async connect(): Promise<void> {
@@ -175,29 +179,38 @@ export class ApiService {
   }
 
   private async liquidate(borrower?: string) {
+    // logger.debug(`.....................liquidate interval.....................`);
     if (this.db.enoughTask()) {
       const task = borrower ? this.db.getTaskByBorrower(borrower) : this.db.shiftLiquidationParam();
-      if (!task) return;
+      if (!task) {
+        logger.debug('Cannot get target task to liquidate');
+        return;
+      }
 
-      await this.sendLiquidationTx(task);
+      const latestParams = await this.calcLiquidationParam(task.borrower);
+      await this.sendLiquidationTx(latestParams);
     } else {
       logger.debug('There are no tasks to run');
     }
   }
 
   public async process(): Promise<void> {
-    const work = async () => {
+    const scannerWork = async () => {
       new Promise<LiquidationParam[]>((resolve) => {
-        logger.debug(`--------------------interval--------------------`);
+        logger.debug(`--------------------scanner interval--------------------`);
         const tasks = this.scanLiquidationTask();
 
         return resolve(tasks);
       }).then((tasks) => {
         this.storeLiquidationTasks(tasks);
-        this.liquidate();
       });
     };
-    setPromiseInterval(work, this.LISTEN_INTERVAL);
+    
+    const liquidateWork = async () => {this.liquidate() };
+    
+    setPromiseInterval(scannerWork, this.LISTEN_INTERVAL);
+    this.liquidate(this.target);
+    setPromiseInterval(liquidateWork, this.LIQUIDATE_INTERVAL);
   }
 
   private constructLiquidationApiTask(task: LiquidationParam): ApiTask {
