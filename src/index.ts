@@ -11,7 +11,7 @@ const program = new Command();
 program
   .name('liquidation-client')
   .version('1.0.0.', '-v, --vers', 'output the current version')
-  .option('-e, --endpoint <string>', 'The Parachain API endpoint', 'ws://127.0.0.1:9947')
+  .option('-e, --endpoint <string>', 'The Parachain API endpoint', 'ws://127.0.0.1:9948')
   .option('-s, --seed <string>', 'The account seed to use', '//Alice//stash')
   .option('-i, --interactive [boolean]', 'Input seed interactively', false)
   .option('-t, --target <string>', 'Liquidate target account');
@@ -36,8 +36,8 @@ async function main() {
             }
           ])
           .then(({ seed }) => {
-            logger.debug('successful import of liquidation account')
-            seed
+            logger.debug('successful import of liquidation account');
+            seed;
           })
       : seed
   );
