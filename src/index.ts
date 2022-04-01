@@ -1,10 +1,17 @@
-import { Keyring } from '@polkadot/api';
 import '@parallel-finance/types';
+import { Keyring } from '@polkadot/api';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import inquirer from 'inquirer';
 import { Command } from 'commander';
 import { logger } from './logger';
-import { ApiService } from './service';
+import liquidationStore from './liquidationStore';
+import storeFunctions from './liquidationStore/storeFunctions';
+import liquidationClient from './liquidationClient';
+import scan from './scan';
+import liquidate from './liquidate';
+
+const SCAN_INTERVAL: number = 1000 * 60;
+const LIQUIDATE_INTERVAL: number = 1000 * 25;
 
 const program = new Command();
 
@@ -41,10 +48,6 @@ async function main() {
           })
       : seed
   );
-
-  const service = new ApiService({ server: endpoint, agent, target });
-  await service.connect();
-
   // Get all borrowers by scanning the AccountBorrows of each active market.
   // Perform every 1 minutes asynchronously.
 
@@ -65,6 +68,17 @@ async function main() {
   // repayAmount = min(liquidator's balance of A, closeFactor * A's borrow balance of borrower, The total value of B(borrower's) / B's price)
 
   // Liquidate borrow.
+
+  const client = liquidationClient(endpoint, agent, target);
+  const api = await client.connect();
+
+  const store = liquidationStore();
+  const storeFuncs = storeFunctions(store);
+
+  const scanFunc = scan(api, storeFuncs);
+  const liquidateFunc = liquidate(api, storeFuncs);
+
+  await client.start(scanFunc, liquidateFunc, SCAN_INTERVAL, LIQUIDATE_INTERVAL);
 }
 
 main().catch((e) => {

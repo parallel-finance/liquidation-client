@@ -14,10 +14,8 @@
         "lint": "eslint . --ext .ts --fix"
     },
     "dependencies": {
-        "@parallel-finance/api": "^1.4.2",
-        "@polkadot/api": "^6.3.1",
-        "@types/lodash": "^4.14.171",
-        "@types/node": "^16.11.4",
+        "@parallel-finance/api": "^1.6.5",
+        "@polkadot/api": "^7.9.1",
         "commander": "^8.1.0",
         "inquirer": "^8.1.2",
         "interval-promise": "^1.4.0",
@@ -29,6 +27,8 @@
     },
     "devDependencies": {
         "@types/lokijs": "^1.5.7",
+        "@types/lodash": "^4.14.171",
+        "@types/node": "^16.11.4",
         "@typescript-eslint/eslint-plugin": "^4.28.3",
         "@typescript-eslint/parser": "^4.28.3",
         "eslint": "^7.31.0",
