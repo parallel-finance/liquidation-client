@@ -28,15 +28,16 @@ const liquidationClient = (server: string, agent: KeyringPair, target?: string):
   };
 
   const start = async (
-    scan: () => Promise<void>,
+    scan: (lowRepayThreshold: number) => Promise<void>,
     liquidate: (agent: KeyringPair, borrower?: string) => Promise<void>,
     scanInterval: number,
-    liquidateInterval: number
+    liquidateInterval: number,
+    lowRepayThreshold: number
   ): Promise<void> => {
     await liquidate(agent, target);
     const scannerWork = async () => {
       logger.debug('--------------------scanner interval--------------------');
-      await scan();
+      await scan(lowRepayThreshold);
       logger.debug('--------------------scanner end--------------------');
     };
     const liquidateWork = async () => {

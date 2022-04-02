@@ -25,10 +25,11 @@ export type LiquidationStoreFunctions = {
 export type LiquidationClient = {
   connect: () => Promise<ApiPromise>;
   start: (
-    scan: () => Promise<void>,
+    scan: (lowRepayThreshold: number) => Promise<void>,
     liquidate: (agent: KeyringPair, borrower?: string) => Promise<void>,
     scanInterval: number,
-    liquidateInterval: number
+    liquidateInterval: number,
+    lowRepayThreshold: number
   ) => Promise<void>;
 };
 

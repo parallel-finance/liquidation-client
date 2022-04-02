@@ -12,6 +12,7 @@ import liquidate from './liquidate';
 
 const SCAN_INTERVAL: number = 1000 * 60;
 const LIQUIDATE_INTERVAL: number = 1000 * 25;
+const LOW_REPAY_THRESHOLD = 1;
 
 const program = new Command();
 
@@ -78,7 +79,7 @@ async function main() {
   const scanFunc = scan(api, storeFuncs);
   const liquidateFunc = liquidate(api, storeFuncs);
 
-  await client.start(scanFunc, liquidateFunc, SCAN_INTERVAL, LIQUIDATE_INTERVAL);
+  await client.start(scanFunc, liquidateFunc, SCAN_INTERVAL, LIQUIDATE_INTERVAL, LOW_REPAY_THRESHOLD);
 }
 
 main().catch((e) => {
