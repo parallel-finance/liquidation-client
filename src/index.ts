@@ -45,7 +45,7 @@ async function main() {
           ])
           .then(({ seed }) => {
             logger.debug('successful import of liquidation account');
-            seed;
+            return seed;
           })
       : seed
   );
