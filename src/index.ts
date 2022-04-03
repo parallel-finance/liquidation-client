@@ -10,9 +10,9 @@ import liquidationClient from './liquidationClient';
 import scan from './scan';
 import liquidate from './liquidate';
 
-const SCAN_INTERVAL: number = 1000 * 60;
-const LIQUIDATE_INTERVAL: number = 1000 * 25;
-const LOW_REPAY_THRESHOLD = 1;
+const SCAN_INTERVAL: number = 1000 * 60; // in milliseconds
+const LIQUIDATE_INTERVAL: number = 1000 * 25; // in milliseconds
+const LOW_REPAY_THRESHOLD = 1; //in token units
 
 const program = new Command();
 
@@ -49,26 +49,6 @@ async function main() {
           })
       : seed
   );
-  // Get all borrowers by scanning the AccountBorrows of each active market.
-  // Perform every 1 minutes asynchronously.
-
-  // Get the (liquidity, shortfall) for each borrower, and put the borrower who has a
-  // positive shortfall into the liquidation message queue. Perform every 1 minutes asynchronously.
-  // Message queue in this case is a signle file db
-
-  // Get borrower from message queue, and get the latest (liquidity, shortfall) for the borrower.
-
-  // Scan all the debit asset of the borrower, and sort the value of borrow balance in descending order.
-  // The top asset is the best liquidation token.
-
-  // Scan all the collateral asset of the borrower, and sort the value of collateral in descending order.
-  // The top asset is the best collateral token.
-
-  // Assume that A is the liquidation token, B is the collateral token
-  // Calculate the repay amount.
-  // repayAmount = min(liquidator's balance of A, closeFactor * A's borrow balance of borrower, The total value of B(borrower's) / B's price)
-
-  // Liquidate borrow.
 
   const client = liquidationClient(endpoint, agent, target);
   const api = await client.connect();
@@ -88,3 +68,24 @@ main().catch((e) => {
 });
 
 process.on('unhandledRejection', (err) => logger.error(err));
+
+// Get all borrowers by scanning the AccountBorrows of each active market.
+// Perform every 1 minutes asynchronously.
+
+// Get the (liquidity, shortfall) for each borrower, and put the borrower who has a
+// positive shortfall into the liquidation message queue. Perform every 1 minutes asynchronously.
+// Message queue in this case is a signle file db
+
+// Get borrower from message queue, and get the latest (liquidity, shortfall) for the borrower.
+
+// Scan all the debit asset of the borrower, and sort the value of borrow balance in descending order.
+// The top asset is the best liquidation token.
+
+// Scan all the collateral asset of the borrower, and sort the value of collateral in descending order.
+// The top asset is the best collateral token.
+
+// Assume that A is the liquidation token, B is the collateral token
+// Calculate the repay amount.
+// repayAmount = min(liquidator's balance of A, closeFactor * A's borrow balance of borrower, The total value of B(borrower's) / B's price)
+
+// Liquidate borrow.

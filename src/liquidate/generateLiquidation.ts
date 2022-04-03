@@ -6,8 +6,8 @@ import { maxBy, find } from 'lodash';
 import { Liquidation, OraclePrice } from '../types';
 import { StorageKey } from '@polkadot/types';
 
-const BN18 = new BN(10).pow(new BN(18));
-const BN6 = new BN(10).pow(new BN(6));
+const RATE_DECIMAL = new BN(10).pow(new BN(18));
+const PERCENTAGE_DECIMAL = new BN(10).pow(new BN(6));
 
 const generateLiquidation =
   (api: ApiPromise) =>
@@ -44,7 +44,7 @@ const generateLiquidation =
             .toBn()
             .mul(price)
             .mul(exchangeRate as Rate)
-            .div(BN18)
+            .div(RATE_DECIMAL)
         : new BN(0);
     });
     const debitMiscList = await getMiscList(async (assetId, price) => {
@@ -61,8 +61,8 @@ const generateLiquidation =
     const closeFactor: BN = bestDebt.market.closeFactor.toBn();
 
     const repayValue = BN.min(
-      bestCollateral.value.mul(liquidateIncentive).div(BN18),
-      bestDebt.value.mul(closeFactor).div(BN6)
+      bestCollateral.value.mul(RATE_DECIMAL).div(liquidateIncentive),
+      bestDebt.value.mul(closeFactor).div(PERCENTAGE_DECIMAL)
     );
     const [debtPrice] = getUnitPrice(prices, bestDebt.currencyId);
     const repayAmount = repayValue.div(debtPrice);
