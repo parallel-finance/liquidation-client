@@ -19,6 +19,7 @@ const program = new Command();
 program
   .name('liquidation-client')
   .version('1.0.0.', '-v, --vers', 'output the current version')
+  .option('-m, --mode <string>', 'Client mode: liquidation/scanner', 'liquidation')
   .option('-e, --endpoint <string>', 'The Parachain API endpoint', 'ws://127.0.0.1:9948')
   .option('-s, --seed <string>', 'The account seed to use', '//Alice//stash')
   .option('-i, --interactive [boolean]', 'Input seed interactively', false)
@@ -26,9 +27,9 @@ program
 
 program.parse();
 
-const { endpoint, seed, interactive, target } = program.opts();
+const { mode, endpoint, seed, interactive, target } = program.opts();
 
-async function main() {
+const main = async () => {
   logger.debug(`::endpoint::> ${endpoint}`);
   await cryptoWaitReady();
 
@@ -59,8 +60,11 @@ async function main() {
   const scanFunc = scan(api, storeFuncs);
   const liquidateFunc = liquidate(api, storeFuncs);
 
-  await client.start(scanFunc, liquidateFunc, SCAN_INTERVAL, LIQUIDATE_INTERVAL, LOW_REPAY_THRESHOLD);
-}
+  switch (mode) {
+    case 'liquidation':
+      await client.start(scanFunc, liquidateFunc, SCAN_INTERVAL, LIQUIDATE_INTERVAL, LOW_REPAY_THRESHOLD);
+  }
+};
 
 main().catch((e) => {
   logger.debug(e);
