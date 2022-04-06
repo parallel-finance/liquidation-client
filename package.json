@@ -9,7 +9,7 @@
     "scripts": {
         "build": "tsc",
         "start": "ts-node src/index.ts -m liquidation",
-        "test": "jest",
+        "test": "jest --watch",
         "fmt": "prettier 'src/**/*.ts' --write",
         "lint": "eslint . --ext .ts --fix"
     },
