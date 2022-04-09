@@ -8,16 +8,14 @@
     "license": "Apache-2.0",
     "scripts": {
         "build": "tsc",
-        "start": "ts-node src/index.ts",
-        "test": "mocha",
+        "start": "ts-node src/index.ts -m liquidation",
+        "test": "jest",
         "fmt": "prettier 'src/**/*.ts' --write",
         "lint": "eslint . --ext .ts --fix"
     },
     "dependencies": {
-        "@parallel-finance/api": "^1.4.2",
-        "@polkadot/api": "^6.3.1",
-        "@types/lodash": "^4.14.171",
-        "@types/node": "^16.11.4",
+        "@parallel-finance/api": "^1.6.5",
+        "@polkadot/api": "^7.9.1",
         "commander": "^8.1.0",
         "inquirer": "^8.1.2",
         "interval-promise": "^1.4.0",
@@ -28,14 +26,17 @@
         "winston": "^3.3.3"
     },
     "devDependencies": {
+        "@types/jest": "^27.4.1",
+        "@types/lodash": "^4.14.171",
         "@types/lokijs": "^1.5.7",
+        "@types/node": "^16.11.4",
         "@typescript-eslint/eslint-plugin": "^4.28.3",
         "@typescript-eslint/parser": "^4.28.3",
         "eslint": "^7.31.0",
         "eslint-config-prettier": "^8.3.0",
         "eslint-plugin-prettier": "^3.4.0",
+        "jest": "^27.5.1",
         "lint-staged": "^11.0.1",
-        "mocha": "^9.0.2",
         "prettier": "^2.3.2",
         "typescript": "^4.3.5"
     }

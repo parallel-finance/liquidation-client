@@ -1,6 +1,7 @@
 ## Parallel Money Market Liquidation Client
 
 ### Montivation
+
 We need to liquidate the borrower who has a shortfall in time, so we will build this service to scan the underwater accounts and liquidate the borrow for them.
 
 ### Features
@@ -13,6 +14,7 @@ We need to liquidate the borrower who has a shortfall in time, so we will build 
 ### Current Solution
 
 We need several different executors running on the different threads.
+
 - Fetch accounts from Parallel's API every `N` minutes and store the accounts to be liquidated.
 
   > A borrower scanner is used to scan the `AccountBorrows` of each active market and get the `(liquidity, shortfall)` of each borrower by using JSON-RPC [loans_getAccountLiquidity](https://github.com/parallel-finance/parallel/issues/273). Put the borrower who has a positive shortfall into the liquidation message queue, which in this case is a single file db.
@@ -31,8 +33,6 @@ For example, suppose Bob believes that KSM's price will fall soon. Bob can suppl
 
 If, on the other hand, Bob is wrong -- the price of KSM rises -- then Bob is in trouble. In this situation, the value of his borrowed KSM may grow to exceed the `collateralFactor * valueOfSuppliedUSDT`. If Bob fails to pay off his loan before this happens, then Bob is subject to liquidation.
 
-
-
 For more introductory information, see [Parallel's website](https://parallel.fi) and for a deep dive into transaction dynamics read [this paper](https://docs.parallel.fi/white-paper).
 
 ### Run Liquidation Client
@@ -40,6 +40,9 @@ For more introductory information, see [Parallel's website](https://parallel.fi)
 ```shell
 # Install dependencies
 yarn
+
+# startup locally
+yarn start
 
 # startup and input seed interactively
 yarn start -i true -e "wss://parallel-heiko.api.onfinality.io/public-ws"
