@@ -1,13 +1,19 @@
 import { ApiPromise } from '@polkadot/api';
-import { LiquidationStoreFunctions } from '../types';
+import { LiquidationStoreFunctions, RedisClient } from '../types';
+import refreshBorrowersRedis from './refreshBorrowersRedis';
 import scanLiquidationBorrowers from './scanLiquidationBorrowers';
 import storeLiquidationBorrowers from './storeLiquidationBorrowers';
 
-const scan =
+export const scanAndStore =
   (api: ApiPromise, storeFuncs: LiquidationStoreFunctions) =>
   async (lowRepayThreshold: number): Promise<void> => {
     const borrowers = await scanLiquidationBorrowers(api)(lowRepayThreshold);
     storeLiquidationBorrowers(storeFuncs)(borrowers);
   };
 
-export default scan;
+export const scanAndRefreshRedis =
+  (api: ApiPromise, redisClient: RedisClient) =>
+  async (lowRepayThreshold: number): Promise<void> => {
+    const borrowers = await scanLiquidationBorrowers(api)(lowRepayThreshold);
+    await refreshBorrowersRedis(redisClient)(borrowers);
+  };
