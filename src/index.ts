@@ -7,12 +7,16 @@ import { logger } from './logger';
 import liquidationStore from './liquidationStore';
 import storeFunctions from './liquidationStore/storeFunctions';
 import liquidationClient from './liquidationClient';
-import scan from './scan';
+import { scanAndStore, scanAndRefreshRedis } from './scan';
 import liquidate from './liquidate';
+import apiConnection from './connections/apiConnection';
+import scannerClient from './scannerClient';
+import redisConnection from './connections/redisConnection';
 
 const SCAN_INTERVAL: number = 1000 * 60; // in milliseconds
 const LIQUIDATE_INTERVAL: number = 1000 * 25; // in milliseconds
 const LOW_REPAY_THRESHOLD = 1; //in token units
+const SCANNER_INTERVAL: number = 1000 * 60 * 10; // in milliseconds
 
 const program = new Command();
 
@@ -20,6 +24,11 @@ program
   .name('liquidation-client')
   .version('1.0.0.', '-v, --vers', 'output the current version')
   .option('-m, --mode <string>', 'Client mode: liquidation/scanner', 'liquidation')
+  .option(
+    '-r, --redis-endpoint <string>',
+    'The Redis endpoint including host, port, db num and maybe credentials',
+    'redis://127.0.0.1:6379/0'
+  )
   .option('-e, --endpoint <string>', 'The Parachain API endpoint', 'ws://127.0.0.1:9948')
   .option('-s, --seed <string>', 'The account seed to use', '//Alice//stash')
   .option('-i, --interactive [boolean]', 'Input seed interactively', false)
@@ -27,42 +36,54 @@ program
 
 program.parse();
 
-const { mode, endpoint, seed, interactive, target } = program.opts();
+const { mode, redisEndpoint, endpoint, seed, interactive, target } = program.opts();
 
 const main = async () => {
-  logger.debug(`::endpoint::> ${endpoint}`);
   await cryptoWaitReady();
-
-  const keyring = new Keyring({ type: 'sr25519' });
-  const agent = keyring.addFromMnemonic(
-    interactive
-      ? await inquirer
-          .prompt<{ seed: string }>([
-            {
-              type: 'password',
-              name: 'seed',
-              message: 'Input your seed'
-            }
-          ])
-          .then(({ seed }) => {
-            logger.debug('successful import of liquidation account');
-            return seed;
-          })
-      : seed
-  );
-
-  const client = liquidationClient(endpoint, agent, target);
-  const api = await client.connect();
-
-  const store = liquidationStore();
-  const storeFuncs = storeFunctions(store);
-
-  const scanFunc = scan(api, storeFuncs);
-  const liquidateFunc = liquidate(api, storeFuncs);
-
   switch (mode) {
-    case 'liquidation':
-      await client.start(scanFunc, liquidateFunc, SCAN_INTERVAL, LIQUIDATE_INTERVAL, LOW_REPAY_THRESHOLD);
+    case 'liquidation': {
+      logger.debug(`::endpoint::> ${endpoint}`);
+      const keyring = new Keyring({ type: 'sr25519' });
+      const agent = keyring.addFromMnemonic(
+        interactive
+          ? await inquirer
+              .prompt<{ seed: string }>([
+                {
+                  type: 'password',
+                  name: 'seed',
+                  message: 'Input your seed'
+                }
+              ])
+              .then(({ seed }) => {
+                logger.debug('successful import of liquidation account');
+                return seed;
+              })
+          : seed
+      );
+      const api = await apiConnection(endpoint);
+      const store = liquidationStore();
+      const storeFuncs = storeFunctions(store);
+      const scanFunc = scanAndStore(api, storeFuncs);
+      const liquidateFunc = liquidate(api, storeFuncs);
+
+      const client = liquidationClient(scanFunc, liquidateFunc, agent, target);
+      await client.start(SCAN_INTERVAL, LIQUIDATE_INTERVAL, LOW_REPAY_THRESHOLD);
+      break;
+    }
+    case 'scanner': {
+      logger.debug(`::endpoint::> ${endpoint}`);
+      logger.debug(`::redis endpoint::> ${redisEndpoint}`);
+      const api = await apiConnection(endpoint);
+      const redisClient = await redisConnection(redisEndpoint);
+      const scanFunc = scanAndRefreshRedis(api, redisClient);
+
+      const client = scannerClient(scanFunc);
+      await client.start(SCANNER_INTERVAL);
+      break;
+    }
+    default: {
+      logger.error(`unknow mode: ${mode}`);
+    }
   }
 };
 

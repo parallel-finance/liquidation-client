@@ -41,9 +41,17 @@ For more introductory information, see [Parallel's website](https://parallel.fi)
 # Install dependencies
 yarn
 
-# startup locally
+# startup liquidation client locally
+## Startup local chain first on ws://localhost:9948 and local relay chain on ws://localhost:9944
 yarn start
 
-# startup and input seed interactively
+# startup scanner locally
+## Startup local redis on redis://localhost:6379
+yarn scanner
+
+# startup liquidation client and input seed interactively
 yarn start -i true -e "wss://parallel-heiko.api.onfinality.io/public-ws"
+
+# startup scanner on configured redis endpoint
+yarn scanner -e "<chain-endpoint-in-wss>" -r "<redis-endpoint-in-format-of-redis[s]://[[username][:password]@][host][:port][/db-number]>"
 ```
