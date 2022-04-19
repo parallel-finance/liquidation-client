@@ -55,3 +55,19 @@ yarn start -i true -e "wss://parallel-heiko.api.onfinality.io/public-ws"
 # startup scanner on configured redis endpoint
 yarn scanner -e "<chain-endpoint-in-wss>" -r "<redis-endpoint-in-format-of-redis[s]://[[username][:password]@][host][:port][/db-number]>"
 ```
+
+### Build Docker Image
+
+```shell
+docker build. -f Dockerfile.release
+```
+
+### Run Liquidation Client via Docker
+
+```shell
+# startup liquidation client
+docker run <image> -m liquidation -e "<chain-endpoint>"
+
+# startup underwater account scanner
+docker run <image> -m scanner -e "<chain-endpoint>" -r "<redis-endpoint>"
+```
