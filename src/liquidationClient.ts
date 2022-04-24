@@ -13,12 +13,12 @@ const liquidationClient = (
     await liquidate(agent, target);
     const scannerWork = async () => {
       logger.debug('--------------------scanner interval--------------------');
-      await scan(lowRepayThreshold);
+      await scan(lowRepayThreshold).catch(logger.error);
       logger.debug('--------------------scanner end--------------------');
     };
     const liquidateWork = async () => {
       logger.debug('--------------------liquidate interval--------------------');
-      await liquidate(agent);
+      await liquidate(agent).catch(logger.error);
       logger.debug('--------------------liquidate end--------------------');
     };
     setPromiseInterval(scannerWork, scanInterval);
