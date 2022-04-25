@@ -6,7 +6,7 @@ const scannerClient = (scan: (lowRepayThreshold: number) => Promise<void>): Scan
   const start = async (scanInterval: number, lowRepayThreshold?: number): Promise<void> => {
     const scannerWork = async () => {
       logger.debug('--------------------scanner client interval--------------------');
-      await scan(lowRepayThreshold || 0);
+      await scan(lowRepayThreshold || 0).catch(logger.error);
       logger.debug('--------------------scanner client end--------------------');
     };
     setPromiseInterval(scannerWork, scanInterval);

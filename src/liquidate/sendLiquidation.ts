@@ -33,8 +33,7 @@ const sendLiquidation =
               }
             });
           }
-        })
-        .catch(logger.error);
+        });
     });
   };
 
