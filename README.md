@@ -54,6 +54,9 @@ yarn start -i true -e "wss://parallel-heiko.api.onfinality.io/public-ws"
 
 # startup scanner on configured redis endpoint
 yarn scanner -e "<chain-endpoint-in-wss>" -r "<redis-endpoint-in-format-of-redis[s]://[[username][:password]@][host][:port][/db-number]>"
+
+# run scanner and print once
+yarn print -e "<chain-endpoint>"
 ```
 
 ### Build Docker Image

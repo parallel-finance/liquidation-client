@@ -10,6 +10,7 @@
         "build": "tsc",
         "start": "ts-node src/index.ts -m liquidation",
         "scanner": "ts-node src/index.ts -m scanner",
+        "print": "ts-node src/index.ts -m print",
         "test": "jest",
         "fmt": "prettier 'src/**/*.ts' --write",
         "lint": "eslint . --ext .ts --fix"
