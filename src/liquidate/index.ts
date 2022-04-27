@@ -8,10 +8,8 @@ import { KeyringPair } from '@polkadot/keyring/types';
 const liquidate =
   (api: ApiPromise, storeFuncs: LiquidationStoreFunctions) =>
   async (agent: KeyringPair, borrower?: string): Promise<void> => {
-    if (storeFuncs.isEmpty()) {
-      logger.debug('LIQUIDATE:There are no liquidations to run');
-    } else {
-      const liquidationBorrower = borrower ? storeFuncs.shiftBorrower(borrower) : storeFuncs.shiftLast();
+    if (borrower) {
+      const liquidationBorrower = storeFuncs.shiftBorrower(borrower);
       if (!liquidationBorrower) {
         logger.debug('LIQIDATE:Cannot get target liquidation to liquidate');
       }
@@ -20,7 +18,17 @@ const liquidate =
         `LIQUIDATE:handling <-> [${liquidation.borrower}, ${liquidation.liquidateToken}, ${liquidation.repay}, ${liquidation.collateralToken}]`
       );
       await sendLiquidation(api)(liquidation, agent);
+    } else {
+      while (!storeFuncs.isEmpty()) {
+        const liquidationBorrower = storeFuncs.shiftLast();
+        const liquidation = await generateLiquidation(api)(liquidationBorrower);
+        logger.debug(
+          `LIQUIDATE:handling <-> [${liquidation.borrower}, ${liquidation.liquidateToken}, ${liquidation.repay}, ${liquidation.collateralToken}]`
+        );
+        await sendLiquidation(api)(liquidation, agent);
+      }
     }
+    logger.debug('LIQUIDATE:There are no liquidations to run');
   };
 
 export default liquidate;

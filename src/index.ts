@@ -7,14 +7,14 @@ import { logger } from './logger';
 import liquidationStore from './liquidationStore';
 import storeFunctions from './liquidationStore/storeFunctions';
 import liquidationClient from './liquidationClient';
-import { scanAndStore, scanAndRefreshRedis } from './scan';
+import { scanAndStore, scanAndRefreshRedis, scanAndReturn } from './scan';
 import liquidate from './liquidate';
 import apiConnection from './connections/apiConnection';
 import scannerClient from './scannerClient';
 import redisConnection from './connections/redisConnection';
 
 const SCAN_INTERVAL: number = 1000 * 60; // in milliseconds
-const LIQUIDATE_INTERVAL: number = 1000 * 25; // in milliseconds
+const LIQUIDATE_INTERVAL: number = 1000 * 30; // in milliseconds
 const LOW_REPAY_THRESHOLD = 1; //in token units
 const SCANNER_INTERVAL: number = 1000 * 60 * 10; // in milliseconds
 
@@ -23,7 +23,7 @@ const program = new Command();
 program
   .name('liquidation-client')
   .version('1.0.0.', '-v, --vers', 'output the current version')
-  .option('-m, --mode <string>', 'Client mode: liquidation/scanner', 'liquidation')
+  .option('-m, --mode <string>', 'Client mode: liquidation/scanner/print', 'liquidation')
   .option(
     '-r, --redis-endpoint <string>',
     'The Redis endpoint including host, port, db num and maybe credentials',
@@ -79,6 +79,22 @@ const main = async () => {
 
       const client = scannerClient(scanFunc);
       await client.start(SCANNER_INTERVAL);
+      break;
+    }
+    case 'print': {
+      logger.debug(`::endpoint::> ${endpoint}`);
+      const api = await apiConnection(endpoint);
+      const scanFunc = scanAndReturn(api);
+      const results = await scanFunc();
+      logger.info('----------------scan result--------------');
+      results.forEach((result) => {
+        logger.info('----------');
+        logger.info(`borrrower:       ${result.borrower}`);
+        logger.info(`total loan:      $${result.totalLoan}`);
+        logger.info(`total colletral: $${result.totalCollateral}`);
+        logger.info(`shortfall:       $${result.shortfall}`);
+      });
+      logger.info('----------------end--------------');
       break;
     }
     default: {

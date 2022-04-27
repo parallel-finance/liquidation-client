@@ -14,6 +14,23 @@ export type Liquidation = {
   repayDecimal: BN;
 };
 
+export type LiquidationInfo = {
+  supplies: {
+    currencyId: CurrencyId;
+    value: BN;
+    decimal: BN;
+    price: BN;
+    liquidateIncentive: BN;
+  }[];
+  loans: {
+    currencyId: CurrencyId;
+    value: BN;
+    decimal: BN;
+    price: BN;
+    closeFactor: BN;
+  }[];
+};
+
 export type LiquidationStoreFunctions = {
   insertBorrower: (borrower: string) => void;
   isEmpty: () => boolean;
@@ -36,3 +53,10 @@ export type OraclePrice = {
 };
 
 export type RedisClient = ReturnType<typeof createClient>;
+
+export type ScanResult = {
+  borrower: string;
+  totalLoan: number;
+  totalCollateral: number;
+  shortfall: number;
+};

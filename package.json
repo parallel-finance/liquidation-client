@@ -10,13 +10,15 @@
         "build": "tsc",
         "start": "ts-node src/index.ts -m liquidation",
         "scanner": "ts-node src/index.ts -m scanner",
+        "print": "ts-node src/index.ts -m print",
         "test": "jest",
         "fmt": "prettier 'src/**/*.ts' --write",
         "lint": "eslint . --ext .ts --fix"
     },
     "dependencies": {
-        "@parallel-finance/api": "^1.6.5",
+        "@parallel-finance/api": "^1.6.7",
         "@polkadot/api": "^7.9.1",
+        "@polkadot/typegen": "^6.3.1",
         "commander": "^8.1.0",
         "inquirer": "^8.1.2",
         "interval-promise": "^1.4.0",
