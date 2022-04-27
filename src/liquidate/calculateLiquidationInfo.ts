@@ -6,7 +6,7 @@ import { BN } from '@polkadot/util';
 import { find } from 'lodash';
 import { OraclePrice } from '../types';
 import { StorageKey } from '@polkadot/types';
-import { RATE_DECIMAL } from '../constants';
+import { PERCENTAGE_DECIMAL, RATE_DECIMAL } from '../constants';
 
 const calculateLiquidationInfo =
   (api: ApiPromise) =>
@@ -19,7 +19,7 @@ const calculateLiquidationInfo =
       api,
       markets.map(([key]) => key)
     );
-    const getMiscList = async (generateValue: (assetId: CurrencyId, price: BN) => Promise<BN>) =>
+    const getMiscList = async (generateValue: (assetId: CurrencyId, price: BN, market) => Promise<BN>) =>
       (
         await Promise.all(
           markets.map(async ([key, market]) => {
@@ -29,7 +29,7 @@ const calculateLiquidationInfo =
             const [price, decimal] = getUnitPrice(prices, assetId);
             return {
               currencyId: assetId,
-              value: await generateValue(assetId, price),
+              value: await generateValue(assetId, price, unwrapped),
               liquidateIncentive: unwrapped.liquidateIncentive.toBn(),
               closeFactor: unwrapped.closeFactor.toBn(),
               state: unwrapped.state,
@@ -40,13 +40,15 @@ const calculateLiquidationInfo =
         )
       ).filter((item) => item.state.toString() === 'Active');
 
-    const supplies = await getMiscList(async (assetId, price) => {
+    const supplies = await getMiscList(async (assetId, price, market) => {
       const exchangeRate = await api.query.loans.exchangeRate(assetId);
       const deposit = await api.query.loans.accountDeposits(assetId, borrower);
       return deposit.isCollateral.isTrue
         ? deposit.voucherBalance
             .toBn()
             .mul(price)
+            .mul(market.liquidationThreshold.toBn())
+            .div(PERCENTAGE_DECIMAL)
             .mul(exchangeRate as Rate)
             .div(RATE_DECIMAL)
         : new BN(0);

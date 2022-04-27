@@ -14,7 +14,7 @@ import scannerClient from './scannerClient';
 import redisConnection from './connections/redisConnection';
 
 const SCAN_INTERVAL: number = 1000 * 60; // in milliseconds
-const LIQUIDATE_INTERVAL: number = 1000 * 25; // in milliseconds
+const LIQUIDATE_INTERVAL: number = 1000 * 30; // in milliseconds
 const LOW_REPAY_THRESHOLD = 1; //in token units
 const SCANNER_INTERVAL: number = 1000 * 60 * 10; // in milliseconds
 
@@ -89,10 +89,10 @@ const main = async () => {
       logger.info('----------------scan result--------------');
       results.forEach((result) => {
         logger.info('----------');
-        logger.info(`borrrower:    ${result.borrower}`);
-        logger.info(`total loan:   $ ${result.totalLoan}`);
-        logger.info(`total supply: $ ${result.totalSupply}`);
-        logger.info(`shortfall:    $ ${result.shortfall}`);
+        logger.info(`borrrower:       ${result.borrower}`);
+        logger.info(`total loan:      $${result.totalLoan}`);
+        logger.info(`total colletral: $${result.totalCollateral}`);
+        logger.info(`shortfall:       $${result.shortfall}`);
       });
       logger.info('----------------end--------------');
       break;

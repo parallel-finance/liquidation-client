@@ -31,6 +31,6 @@ export const scanAndReturn = (api: ApiPromise) => async (): Promise<ScanResult[]
     borrower,
     shortfall: shortfall.div(PRICE_DECIMAL).toNumber(),
     totalLoan: sum(loans.map((loan) => loan.value.div(PRICE_DECIMAL).toNumber())),
-    totalSupply: sum(supplies.map((loan) => loan.value.div(PRICE_DECIMAL).toNumber()))
+    totalCollateral: sum(supplies.map((loan) => loan.value.div(PRICE_DECIMAL).toNumber()))
   }));
 };

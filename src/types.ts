@@ -57,6 +57,6 @@ export type RedisClient = ReturnType<typeof createClient>;
 export type ScanResult = {
   borrower: string;
   totalLoan: number;
-  totalSupply: number;
+  totalCollateral: number;
   shortfall: number;
 };
