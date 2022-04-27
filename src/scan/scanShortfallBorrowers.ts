@@ -16,7 +16,7 @@ const scanShortfallBorrowers = async (api: ApiPromise): Promise<{ borrower: stri
     await Promise.all(
       borrowers.map(async (borrower) => {
         //TODO: Change to use new rpc endpoint to get shortfall value
-        const [, shortfall] = await api.rpc.loans.getAccountLiquidity(borrower, null);
+        const [, shortfall] = await api.rpc.loans.getLiquidationThresholdLiquidity(borrower, null);
         logger.debug(`SCAN:borrower: ${borrower.toHuman()}, shortfall: ${shortfall.toBn().div(PRICE_DECIMAL)}`);
         return { borrower, shortfall: shortfall.toBn(), hasShortfall: shortfall.toBn().cmp(new BN(0)) !== 0 };
       })
