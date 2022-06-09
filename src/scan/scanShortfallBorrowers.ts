@@ -15,10 +15,20 @@ const scanShortfallBorrowers = async (api: ApiPromise): Promise<{ borrower: stri
   return (
     await Promise.all(
       borrowers.map(async (borrower) => {
-        //TODO: Change to use new rpc endpoint to get shortfall value
-        const [, shortfall] = await api.rpc.loans.getLiquidationThresholdLiquidity(borrower, null);
-        logger.debug(`SCAN:borrower: ${borrower.toHuman()}, shortfall: ${shortfall.toBn().div(PRICE_DECIMAL)}`);
-        return { borrower, shortfall: shortfall.toBn(), hasShortfall: shortfall.toBn().cmp(new BN(0)) !== 0 };
+        const [liquidity, shortfall, lfLiquidity, _] = (
+          await api.rpc.loans.getLiquidationThresholdLiquidity(borrower, null)
+        ).map((e) => e.toBn());
+        // Shortfall = B_other + B_dot_over_base - T_other
+        //           = B_other - T_other + max(B_dot - T_lf, 0)
+        //           = B_all - T_all + max(0, T_lf - B_dot)
+        //           = shortfall > 0? shortfall + lfLiquidity : lfLiquidity - liquidity
+        let effectShortfall = shortfall.gtn(0)
+          ? shortfall.add(lfLiquidity)
+          : lfLiquidity.gt(liquidity)
+          ? lfLiquidity.sub(liquidity)
+          : new BN(0);
+        logger.debug(`SCAN:borrower: ${borrower.toHuman()}, shortfall: ${effectShortfall.div(PRICE_DECIMAL)}`);
+        return { borrower, shortfall: effectShortfall, hasShortfall: effectShortfall.cmp(new BN(0)) !== 0 };
       })
     )
   ).filter(({ hasShortfall }) => hasShortfall);
