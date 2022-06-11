@@ -16,7 +16,7 @@
         "lint": "eslint . --ext .ts --fix"
     },
     "dependencies": {
-        "@parallel-finance/api": "^1.7.5",
+        "@parallel-finance/api": "^1.7.6",
         "@polkadot/api": "^7.9.1",
         "@polkadot/typegen": "^6.3.1",
         "commander": "^8.1.0",

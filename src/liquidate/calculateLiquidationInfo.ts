@@ -13,7 +13,7 @@ const calculateLiquidationInfo =
     async (borrower: string): Promise<LiquidationInfo> => {
       const markets = await api.query.loans.markets.entries();
 
-      const [, , , lfShortfall] = await api.rpc.loans.getLiquidationThresholdLiquidity(borrower, null);
+      const [, , , lfShortfall] = await api.rpc.loans.getLiquidationThresholdLiquidity(borrower);
       const lfAsset = api.consts.loans.liquidationFreeAssetId as CurrencyId;
       const lfCollateral = (await api.query.loans.liquidationFreeCollaterals()) as Vec<CurrencyId>;
 
@@ -79,7 +79,8 @@ const getOraclePrices = async (api: ApiPromise, marketKeys: StorageKey<[u32]>[])
   Promise.all(
     marketKeys.map(async ({args: [currencyId]}) => {
       const assetId = currencyId as CurrencyId;
-      const price = await (api.rpc as any).oracle.getValue('Aggregated', assetId);
+
+      const price = await api.rpc.oracle.getValue('Aggregated', assetId);
       const parallelPrice = price.unwrapOrDefault();
       const assetMeta = await api.query.assets.metadata(assetId);
       const decimal = ['0', '1'].includes(assetId.toString()) ? new BN(12) : assetMeta.decimals.toBn();

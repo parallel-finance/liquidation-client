@@ -867,33 +867,33 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@parallel-finance/api@npm:^1.7.5":
-  version: 1.7.5
-  resolution: "@parallel-finance/api@npm:1.7.5"
+"@parallel-finance/api@npm:^1.7.6":
+  version: 1.7.6
+  resolution: "@parallel-finance/api@npm:1.7.6"
   dependencies:
     "@open-web3/orml-api-derive": ^1.1.4
-    "@parallel-finance/types": ^1.7.5
-  checksum: aa4fc272e24754493fd7f055957dab7e68d38c9f97cc0abcd5e84973a94cfc191dea11d4b28799bd471b5cb5b318b56c65418c66838e15ab857fabbc110e0629
+    "@parallel-finance/types": ^1.7.6
+  checksum: 9bb1952d014948411b6b5f617df0e987494471401dce7e7364778866c8206080d3b99e0ce9c2dce5d2c70f20abc78b40b6655507c24b8dece5cac1aa36cd7ebb
   languageName: node
   linkType: hard
 
-"@parallel-finance/type-definitions@npm:^1.7.5":
-  version: 1.7.5
-  resolution: "@parallel-finance/type-definitions@npm:1.7.5"
+"@parallel-finance/type-definitions@npm:^1.7.6":
+  version: 1.7.6
+  resolution: "@parallel-finance/type-definitions@npm:1.7.6"
   dependencies:
     "@open-web3/orml-type-definitions": ^1.1.4
-  checksum: 5cd00466a6ebb74b11a04c7d35f7945c5652ebb2162b7e1089cc8ab4e7043b01006b5cfa7e36e25aa5415c8c7130e8c2899328254ad4e97630c602ca83cea1ad
+  checksum: 7d92cdb43b8a451f4f457e3fe5856a16a81e3bf5ce3df76af07f1ca632fd1762ad6174a9ace1d80ddf765069de96f2710c4cbedfc70d2028d5f6b4503aba5644
   languageName: node
   linkType: hard
 
-"@parallel-finance/types@npm:^1.7.5":
-  version: 1.7.5
-  resolution: "@parallel-finance/types@npm:1.7.5"
+"@parallel-finance/types@npm:^1.7.6":
+  version: 1.7.6
+  resolution: "@parallel-finance/types@npm:1.7.6"
   dependencies:
     "@babel/runtime": ^7.10.2
     "@open-web3/orml-types": ^1.1.4
-    "@parallel-finance/type-definitions": ^1.7.5
-  checksum: 2d57efbaf73bcd5ebc20eedde62b893cb1c0f1d922cc2a5d912c100aebcb10f0029e46e2d540a5b9256e9c09f6f317170ad87a02087763eab4d2b0e1d80f56b2
+    "@parallel-finance/type-definitions": ^1.7.6
+  checksum: 5e7c4189c39b4b8f493fbb60812115d7f7b18a7ddb390d63adb06dbca1bf8db36942d230c1e8867e9cb18cf5904defe8881fa23895839d8fa64210c0fd3ef149
   languageName: node
   linkType: hard
 
@@ -4716,7 +4716,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "liquidation-client@workspace:."
   dependencies:
-    "@parallel-finance/api": ^1.7.5
+    "@parallel-finance/api": ^1.7.6
     "@polkadot/api": ^7.9.1
     "@polkadot/typegen": ^6.3.1
     "@types/jest": ^27.4.1
