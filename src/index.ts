@@ -1,13 +1,13 @@
 import '@parallel-finance/types';
-import { Keyring } from '@polkadot/api';
-import { cryptoWaitReady } from '@polkadot/util-crypto';
+import {Keyring} from '@polkadot/api';
+import {cryptoWaitReady} from '@polkadot/util-crypto';
 import inquirer from 'inquirer';
-import { Command } from 'commander';
-import { logger } from './logger';
+import {Command} from 'commander';
+import {logger} from './logger';
 import liquidationStore from './liquidationStore';
 import storeFunctions from './liquidationStore/storeFunctions';
 import liquidationClient from './liquidationClient';
-import { scanAndStore, scanAndRefreshRedis, scanAndReturn } from './scan';
+import {scanAndStore, scanAndRefreshRedis, scanAndReturn} from './scan';
 import liquidate from './liquidate';
 import apiConnection from './connections/apiConnection';
 import scannerClient from './scannerClient';
@@ -36,28 +36,28 @@ program
 
 program.parse();
 
-const { mode, redisEndpoint, endpoint, seed, interactive, target } = program.opts();
+const {mode, redisEndpoint, endpoint, seed, interactive, target} = program.opts();
 
 const main = async () => {
   await cryptoWaitReady();
   switch (mode) {
     case 'liquidation': {
       logger.debug(`::endpoint::> ${endpoint}`);
-      const keyring = new Keyring({ type: 'sr25519' });
+      const keyring = new Keyring({type: 'sr25519'});
       const agent = keyring.addFromMnemonic(
         interactive
           ? await inquirer
-              .prompt<{ seed: string }>([
-                {
-                  type: 'password',
-                  name: 'seed',
-                  message: 'Input your seed'
-                }
-              ])
-              .then(({ seed }) => {
-                logger.debug('successful import of liquidation account');
-                return seed;
-              })
+            .prompt<{seed: string}>([
+              {
+                type: 'password',
+                name: 'seed',
+                message: 'Input your seed'
+              }
+            ])
+            .then(({seed}) => {
+              logger.debug('successful import of liquidation account');
+              return seed;
+            })
           : seed
       );
       const api = await apiConnection(endpoint);
@@ -106,7 +106,7 @@ const main = async () => {
 main().catch((e) => {
   logger.debug(e);
   process.exit(-1);
-});
+}).then(() => process.exit(0));
 
 process.on('unhandledRejection', (err) => logger.error(err));
 
