@@ -27,8 +27,9 @@ const scanShortfallBorrowers = async (api: ApiPromise): Promise<{borrower: strin
           : lfLiquidity.gt(liquidity)
             ? lfLiquidity.sub(liquidity)
             : new BN(0);
-        logger.debug(`SCAN:borrower: ${borrower.toHuman()}, shortfall: ${effectShortfall.div(PRICE_DECIMAL)}`);
-        return {borrower, shortfall: effectShortfall, hasShortfall: effectShortfall.cmp(new BN(0)) !== 0};
+        let hasShortfall = effectShortfall.cmpn(0) !== 0;
+        hasShortfall && logger.debug(`SCAN:borrower: ${borrower.toHuman()}, shortfall: ${effectShortfall.div(PRICE_DECIMAL)}`);
+        return {borrower, shortfall: effectShortfall, hasShortfall};
       })
     )
   ).filter(({hasShortfall}) => hasShortfall);

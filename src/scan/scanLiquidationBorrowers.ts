@@ -7,7 +7,7 @@ import scanShortfallBorrowers from './scanShortfallBorrowers';
 const scanLiquidationBorrowers =
   (api: ApiPromise) =>
   async (lowRepayThreshold: number): Promise<string[]> => {
-    const shortfallBorrowers = await (await scanShortfallBorrowers(api)).map(({ borrower }) => borrower);
+    const shortfallBorrowers = (await scanShortfallBorrowers(api)).map(({ borrower }) => borrower);
     logger.debug(`SCAN:shortfallBorrowers count: ${shortfallBorrowers.length}`);
     const liquidations = await Promise.all(shortfallBorrowers.map((borrower) => generateLiquidation(api)(borrower)));
     const validLiquidations = liquidations.filter((liquidation) =>
