@@ -8,6 +8,10 @@ import scanLiquidationBorrowers from './scanLiquidationBorrowers';
 import scanShortfallBorrowers from './scanShortfallBorrowers';
 import storeLiquidationBorrowers from './storeLiquidationBorrowers';
 import { logger } from '../logger';
+import { BigNumber } from 'bignumber.js';
+import { BN } from '@polkadot/util';
+
+const b2b = (n: BN) => new BigNumber(n.toString());
 
 export const scanAndStore =
   (api: ApiPromise, storeFuncs: LiquidationStoreFunctions) =>
@@ -29,8 +33,8 @@ export const scanAndReturn = (api: ApiPromise) => async (): Promise<ScanResult[]
   const liquidationInfo = await Promise.all(borrowers.map(({ borrower }) => calculateLiquidationInfo(api)(borrower)));
   return zipWith(borrowers, liquidationInfo, ({ borrower, shortfall }, { loans, supplies }) => ({
     borrower,
-    shortfall: shortfall.div(PRICE_DECIMAL).toNumber(),
-    totalLoan: sum(loans.map((loan) => loan.value.div(PRICE_DECIMAL).toNumber())),
-    totalCollateral: sum(supplies.map((loan) => loan.value.div(PRICE_DECIMAL).toNumber()))
+    shortfall: b2b(shortfall).div(b2b(PRICE_DECIMAL)).toNumber(),
+    totalLoan: sum(loans.map((loan) => b2b(loan.value).div(b2b(PRICE_DECIMAL)).toNumber())),
+    totalCollateral: sum(supplies.map((loan) => b2b(loan.value).div(b2b(PRICE_DECIMAL)).toNumber()))
   }));
 };

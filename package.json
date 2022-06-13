@@ -16,9 +16,10 @@
         "lint": "eslint . --ext .ts --fix"
     },
     "dependencies": {
-        "@parallel-finance/api": "^1.6.7",
+        "@parallel-finance/api": "^1.7.6",
         "@polkadot/api": "^7.9.1",
         "@polkadot/typegen": "^6.3.1",
+        "bignumber.js": "^9.0.2",
         "commander": "^8.1.0",
         "inquirer": "^8.1.2",
         "interval-promise": "^1.4.0",
@@ -30,6 +31,7 @@
         "winston": "^3.3.3"
     },
     "devDependencies": {
+        "@types/bignumber.js": "^5.0.0",
         "@types/jest": "^27.4.1",
         "@types/lodash": "^4.14.171",
         "@types/lokijs": "^1.5.7",

@@ -2,6 +2,7 @@ import { Liquidation } from '../types';
 import { logger } from '../logger';
 import { ApiPromise } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
+import { BN } from '@polkadot/util';
 
 const sendLiquidation =
   (api: ApiPromise) =>
@@ -24,6 +25,7 @@ const sendLiquidation =
             events.forEach(({ event: { data, method } }) => {
               if (method === 'ExtrinsicFailed') {
                 logger.debug('LIQUIDATE:tx::failed');
+                // TODO(alannotnerd): describe error details
                 return reject(data);
               }
 

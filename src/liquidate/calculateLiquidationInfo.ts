@@ -5,13 +5,18 @@ import { u32 } from '@polkadot/types';
 import { BN } from '@polkadot/util';
 import { find } from 'lodash';
 import { OraclePrice } from '../types';
-import { StorageKey } from '@polkadot/types';
+import { StorageKey, Vec } from '@polkadot/types';
 import { PERCENTAGE_DECIMAL, RATE_DECIMAL } from '../constants';
 
 const calculateLiquidationInfo =
   (api: ApiPromise) =>
   async (borrower: string): Promise<LiquidationInfo> => {
     const markets = await api.query.loans.markets.entries();
+
+    const [, , , lfShortfall] = await api.rpc.loans.getLiquidationThresholdLiquidity(borrower);
+    const lfAsset = api.consts.loans.liquidationFreeAssetId as CurrencyId;
+    const lfCollateral = (await api.query.loans.liquidationFreeCollaterals()) as Vec<CurrencyId>;
+
     if (markets.length == 0) {
       await Promise.reject(new Error('no markets'));
     }
@@ -41,6 +46,9 @@ const calculateLiquidationInfo =
       ).filter((item) => item.state.toString() === 'Active');
 
     const supplies = await getMiscList(async (assetId, price, market) => {
+      if (!!lfCollateral.toArray().find((e) => e.toBn().eq(assetId.toBn()))) {
+        return new BN(0);
+      }
       const exchangeRate = await api.query.loans.exchangeRate(assetId);
       const deposit = await api.query.loans.accountDeposits(assetId, borrower);
       return deposit.isCollateral.isTrue
@@ -54,6 +62,9 @@ const calculateLiquidationInfo =
         : new BN(0);
     });
     const loans = await getMiscList(async (assetId, price) => {
+      if (assetId.toBn().eq(lfAsset.toBn())) {
+        return lfShortfall.toBn();
+      }
       const snapshot = await api.query.loans.accountBorrows(assetId, borrower);
       const borrowIndex = await api.query.loans.borrowIndex(assetId);
       return snapshot.borrowIndex.toBn().cmp(new BN(0)) !== 0
@@ -68,6 +79,7 @@ const getOraclePrices = async (api: ApiPromise, marketKeys: StorageKey<[u32]>[])
   Promise.all(
     marketKeys.map(async ({ args: [currencyId] }) => {
       const assetId = currencyId as CurrencyId;
+
       const price = await api.rpc.oracle.getValue('Aggregated', assetId);
       const parallelPrice = price.unwrapOrDefault();
       const assetMeta = await api.query.assets.metadata(assetId);

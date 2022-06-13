@@ -60,6 +60,7 @@ const main = async () => {
               })
           : seed
       );
+      logger.debug(`Signer: ${agent.address}`);
       const api = await apiConnection(endpoint);
       const store = liquidationStore();
       const storeFuncs = storeFunctions(store);
