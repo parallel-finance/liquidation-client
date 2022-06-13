@@ -9,6 +9,7 @@ const sendLiquidation =
   async (liquidation: Liquidation, agent: KeyringPair): Promise<void> => {
     const nonce = await api.rpc.system.accountNextIndex(agent.address);
 
+    //TODO(alan): should send emergency report and exit.
     return new Promise<void>((resolve, reject) => {
       api.tx.loans
         .liquidateBorrow(
