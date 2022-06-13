@@ -9,8 +9,8 @@ const generateLiquidation =
   (api: ApiPromise) =>
   async (borrower: string): Promise<Liquidation> => {
     const { supplies, loans } = await calculateLiquidationInfo(api)(borrower);
-    const bestCollateral = maxBy(supplies, (misc) => misc.value.toBuffer());
-    const bestDebt = maxBy(loans, (misc) => misc.value.toBuffer());
+    const bestCollateral = maxBy(supplies, (misc) => BigInt(misc.value.toString()));
+    const bestDebt = maxBy(loans, (misc) => BigInt(misc.value.toString()));
     const liquidateIncentive: BN = bestCollateral.liquidateIncentive;
     const closeFactor: BN = bestDebt.closeFactor;
     const repayValue = BN.min(
