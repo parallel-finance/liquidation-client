@@ -1,6 +1,6 @@
 {
     "name": "liquidation-client",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "description": "liquidation client for parallel money market",
     "main": "index.js",
     "repository": "https://github.com/parallel-finance/liquidation-client",
