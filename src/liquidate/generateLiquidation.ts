@@ -17,6 +17,7 @@ const generateLiquidation =
       bestCollateral.value.mul(RATE_DECIMAL).div(liquidateIncentive),
       bestDebt.value.mul(closeFactor).div(PERCENTAGE_DECIMAL)
     );
+
     const repayAmount = repayValue.div(bestDebt.price);
     return {
       borrower,

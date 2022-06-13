@@ -55,8 +55,6 @@ const calculateLiquidationInfo =
         ? deposit.voucherBalance
             .toBn()
             .mul(price)
-            .mul(market.liquidationThreshold.toBn())
-            .div(PERCENTAGE_DECIMAL)
             .mul(exchangeRate as Rate)
             .div(RATE_DECIMAL)
         : new BN(0);
