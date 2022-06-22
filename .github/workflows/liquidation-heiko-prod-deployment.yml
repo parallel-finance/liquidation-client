@@ -9,7 +9,7 @@ env:
   ECS_SERVICE: liquidator-heiko-prod
   ECS_TASK_DEFINITION: ./heiko-task-definition.json
   ECS_TASK_DEFINITION_GPG: ./heiko-task-definition.json.gpg
-  CONTAINER_NAME: liquidation-heiko-prod
+  CONTAINER_NAME: liquidator-heiko-prod
   ENDPOINT: wss://heiko-rpc.parallel.fi
   
   
