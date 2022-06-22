@@ -55,14 +55,6 @@ jobs:
           task-definition: ${{ env.ECS_TASK_DEFINITION }}
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.build-image.outputs.image }}
-          command: |
-            /usr/local/bin/liquidation-client,
-            -m,
-            liquidation,
-            -e,
-            ${{ env.ENDPOINT }},
-            -s,
-            ${{ secrets.SUI_HEIKO }}
           
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
