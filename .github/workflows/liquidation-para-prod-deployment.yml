@@ -1,15 +1,15 @@
-name: Production Heiko deployment
+name: Production Para deployment
 
 on: workflow_dispatch
 
 env:
   AWS_REGION: us-east-2
-  ECR_REPOSITORY: liquidator-heiko-prod
+  ECR_REPOSITORY: liquidator-para-prod
   ECS_CLUSTER: liquidator-prod
-  ECS_SERVICE: liquidator-heiko-prod
-  ECS_TASK_DEFINITION: ./heiko-task-definition.json
-  ECS_TASK_DEFINITION_GPG: ./heiko-task-definition.json.gpg
-  CONTAINER_NAME: liquidator-heiko-prod
+  ECS_SERVICE: liquidator-para-prod
+  ECS_TASK_DEFINITION: ./para-task-definition.json
+  ECS_TASK_DEFINITION_GPG: ./para-task-definition.json.gpg
+  CONTAINER_NAME: liquidation-para-prod
   
   
 
@@ -33,7 +33,7 @@ jobs:
       - name: Decrypt ECS_TASK_DEFINITION_GPG
         id: dectypt-json
         run: |
-          gpg --quiet --batch --yes --decrypt --passphrase="${{ secrets.HEIKO_TASK_DEFINITION_GPG }}" --output ${{ env.ECS_TASK_DEFINITION }} ${{ env.ECS_TASK_DEFINITION_GPG }}
+          gpg --quiet --batch --yes --decrypt --passphrase="${{ secrets.PARA_TASK_DEFINITION_GPG }}" --output ${{ env.ECS_TASK_DEFINITION }} ${{ env.ECS_TASK_DEFINITION_GPG }}
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
