@@ -1,0 +1,81 @@
+name: Production Heiko deployment
+
+on: workflow_dispatch
+
+env:
+  AWS_REGION: us-east-2
+  ECR_REPOSITORY: liquidator-heiko-prod
+  ECS_CLUSTER: liquidator-prod
+  ECS_SERVICE: liquidator-heiko-prod
+  ECS_TASK_DEFINITION: ./production-task-definition.json
+  ECS_TASK_DEFINITION_GPG: ./production-task-definition.json.gpg
+  CONTAINER_NAME: liquidation-heiko-prod
+  ENDPOINT: wss://heiko-rpc.parallel.fi
+  
+  
+
+jobs:
+  deploy:
+    name: deployment prod
+    runs-on: ubuntu-latest
+    if: |
+      github.event.sender.id == 78835349 ||
+      github.event.sender.id == 13250462
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Decrypt ECS_TASK_DEFINITION_GPG
+        id: dectypt-json
+        run: |
+          gpg --quiet --batch --yes --decrypt --passphrase="${{ secrets.HEIKO_TASK_DEFINITION_GPG }}" --output ${{ env.ECS_TASK_DEFINITION }} ${{ env.ECS_TASK_DEFINITION_GPG }}
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.ECS_TASK_DEFINITION }}
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
+          command: |
+            /usr/local/bin/liquidation-client,
+            -m,
+            liquidation,
+            -e,
+            ${{ env.ENDPOINT }},
+            -s,
+            ${{ secrets.SUI_HEIKO }}
+          
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+      - name: slack
+        uses: 8398a7/action-slack@v3
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,eventName,ref,workflow
+        if: always()
