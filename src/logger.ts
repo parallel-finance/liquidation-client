@@ -1,6 +1,6 @@
 import winston from 'winston';
 import { CloudWatch, default as AWS } from 'aws-sdk';
-import type { MetricData } from 'aws-sdk/clients/cloudwatch';
+import type { MetricData, PutMetricDataInput } from 'aws-sdk/clients/cloudwatch';
 import { Metrics } from './constants';
 
 type Logger = ReturnType<typeof winston.createLogger> & {
@@ -8,9 +8,16 @@ type Logger = ReturnType<typeof winston.createLogger> & {
   startHeartbeat: () => void;
 };
 
+interface LoggerConfig {
+  chain: string;
+  heartbeatInterval: number;
+}
+
 AWS.config.update({ region: 'us-east-2' });
 
-const createLogger = (): Logger => {
+export let logger: Logger = null;
+
+export const createLogger = (config: LoggerConfig): Logger => {
   const cloudwatchClient = new CloudWatch();
   let heartbeatHandle: NodeJS.Timer | null = null;
   let logger: any = winston.createLogger({
@@ -32,8 +39,16 @@ const createLogger = (): Logger => {
   });
 
   logger.metric = (metricData: MetricData) => {
-    const params = {
-      MetricData: metricData,
+    const params: PutMetricDataInput = {
+      MetricData: metricData.map((e) => ({
+        ...e,
+        Dimensions: [
+          {
+            Name: 'Chain',
+            Value: config.chain
+          }
+        ]
+      })),
       Namespace: 'liquidation-client'
     };
     // It's not neccessary to wait this finish.
@@ -45,10 +60,11 @@ const createLogger = (): Logger => {
 
   logger.startHeartbeat = () => {
     if (!heartbeatHandle) {
-      heartbeatHandle = setInterval(() => logger.metric([{ MetricName: Metrics.Heartbeat, Value: 1 }]), 5000);
+      heartbeatHandle = setInterval(
+        () => logger.metric([{ MetricName: Metrics.Heartbeat, Value: 1 }]),
+        config.heartbeatInterval
+      );
     }
   };
   return logger;
 };
-
-export const logger = createLogger();
