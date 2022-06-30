@@ -3,7 +3,7 @@ import { Keyring } from '@polkadot/api';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import inquirer from 'inquirer';
 import { Command } from 'commander';
-import { logger } from './logger';
+import { logger, initLogger } from './logger';
 import liquidationStore from './liquidationStore';
 import storeFunctions from './liquidationStore/storeFunctions';
 import liquidationClient from './liquidationClient';
@@ -31,17 +31,24 @@ program
   )
   .option('-e, --endpoint <string>', 'The Parachain API endpoint', 'ws://127.0.0.1:9948')
   .option('-s, --seed <string>', 'The account seed to use', '//Alice//stash')
+  .option('--chain <string>', 'The name of the chain where the client runs', 'dev')
+  .option('--heartbeat-interval <number>', 'The duration of every heartbeat metric(in ms)', '5000')
   .option('-i, --interactive [boolean]', 'Input seed interactively', false)
   .option('-t, --target <string>', 'Liquidate target account');
 
 program.parse();
 
-const { mode, redisEndpoint, endpoint, seed, interactive, target } = program.opts();
+const { mode, redisEndpoint, endpoint, seed, interactive, target, chain, heartbeatInterval } = program.opts();
 
 const main = async () => {
   await cryptoWaitReady();
+  initLogger({
+    chain,
+    heartbeatInterval: parseInt(heartbeatInterval)
+  });
   switch (mode) {
     case 'liquidation': {
+      logger.startHeartbeat();
       logger.debug(`::endpoint::> ${endpoint}`);
       const keyring = new Keyring({ type: 'sr25519' });
       const agent = keyring.addFromMnemonic(
