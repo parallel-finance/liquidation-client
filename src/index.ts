@@ -3,7 +3,7 @@ import { Keyring } from '@polkadot/api';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import inquirer from 'inquirer';
 import { Command } from 'commander';
-import { logger, createLogger } from './logger';
+import { logger, initLogger } from './logger';
 import liquidationStore from './liquidationStore';
 import storeFunctions from './liquidationStore/storeFunctions';
 import liquidationClient from './liquidationClient';
@@ -42,7 +42,7 @@ const { mode, redisEndpoint, endpoint, seed, interactive, target, chain, heartbe
 
 const main = async () => {
   await cryptoWaitReady();
-  createLogger({
+  initLogger({
     chain,
     heartbeatInterval: parseInt(heartbeatInterval)
   });

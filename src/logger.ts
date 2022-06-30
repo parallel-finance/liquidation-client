@@ -17,10 +17,10 @@ AWS.config.update({ region: 'us-east-2' });
 
 export let logger: Logger = null;
 
-export const createLogger = (config: LoggerConfig): Logger => {
+export const initLogger = (config: LoggerConfig) => {
   const cloudwatchClient = new CloudWatch();
   let heartbeatHandle: NodeJS.Timer | null = null;
-  let logger: any = winston.createLogger({
+  let instance: any = winston.createLogger({
     format: winston.format.combine(
       winston.format.colorize(),
       winston.format.timestamp(),
@@ -38,7 +38,7 @@ export const createLogger = (config: LoggerConfig): Logger => {
     ]
   });
 
-  logger.metric = (metricData: MetricData) => {
+  instance.metric = (metricData: MetricData) => {
     const params: PutMetricDataInput = {
       MetricData: metricData.map((e) => ({
         ...e,
@@ -55,16 +55,16 @@ export const createLogger = (config: LoggerConfig): Logger => {
     cloudwatchClient
       .putMetricData(params)
       .promise()
-      .catch((e) => logger.error(e));
+      .catch((e) => instance.error(e));
   };
 
-  logger.startHeartbeat = () => {
+  instance.startHeartbeat = () => {
     if (!heartbeatHandle) {
       heartbeatHandle = setInterval(
-        () => logger.metric([{ MetricName: Metrics.Heartbeat, Value: 1 }]),
+        () => instance.metric([{ MetricName: Metrics.Heartbeat, Value: 1 }]),
         config.heartbeatInterval
       );
     }
   };
-  return logger;
+  logger = instance;
 };
