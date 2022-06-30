@@ -42,6 +42,7 @@ const main = async () => {
   await cryptoWaitReady();
   switch (mode) {
     case 'liquidation': {
+      logger.startHeartbeat();
       logger.debug(`::endpoint::> ${endpoint}`);
       const keyring = new Keyring({ type: 'sr25519' });
       const agent = keyring.addFromMnemonic(
