@@ -30,7 +30,7 @@ Resources:
       - Name: Chain
         Value: !Ref ChainName
 
-  ScannerJobDidNotRunAlarm:
+  LiquidateJobDidNotRunAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: Trigger the PD alert when the liquidate job is not alive.
