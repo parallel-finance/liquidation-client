@@ -13,11 +13,11 @@ on:
         required: true
         type: string
     secrets:
-      AWSACCESSKEYID:
+      AWS_ACCESS_KEY_ID:
         required: true
-      AWSSECRETACCESSKEY:
+      AWS_SECRET_ACCESS_KEY:
         required: true
-      PagerDutyIntegrationKey:
+      PAGERDUTY_INTEGRATION_KEY:
         required: true
 
 jobs:
@@ -30,8 +30,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWSACCESSKEYID }}
-          aws-secret-access-key: ${{ secrets.AWSSECRETACCESSKEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ inputs.AWS_REGION }}
 
       - name: Deploy CloudFormation
@@ -41,5 +41,5 @@ jobs:
           template: aws/cloudformation-template.yml
           no-fail-on-empty-changeset: "1"
           parameter-overrides: >-
-            PagerDutyIntegrationKey=${{ secrets.PagerDutyIntegrationKey }},
+            PagerDutyIntegrationKey=${{ secrets.PAGERDUTY_INTEGRATION_KEY }},
             ChainName=${{ inputs.CHAIN_NAME }}
