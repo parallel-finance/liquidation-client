@@ -35,7 +35,7 @@ jobs:
           aws-region: ${{ inputs.AWS_REGION }}
 
       - name: Deploy CloudFormation
-        uses: aws-actions/aws-cloudformation-github-deploy@1
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
           name: ${{ inputs.STACK_NAME }}
           template: aws/cloudformation-template.yml
