@@ -38,7 +38,7 @@ jobs:
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
           name: ${{ inputs.STACK_NAME }}
-          template: aws/cloudformation-template.yml
+          template: aws/cloudformation-infra-template.yml
           no-fail-on-empty-changeset: "1"
           parameter-overrides: >-
             PagerDutyIntegrationKey=${{ secrets.PAGERDUTY_INTEGRATION_KEY }},
