@@ -52,7 +52,6 @@ Resources:
   PagerDutyTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: String
       Subscription:
         - Endpoint: !Sub "https://events.pagerduty.com/integration/${PagerDutyIntegrationKey}/enqueue"
           Protocol: "HTTPS"
