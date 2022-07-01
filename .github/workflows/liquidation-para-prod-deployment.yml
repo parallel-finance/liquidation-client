@@ -20,6 +20,7 @@ jobs:
     if: |
       github.event.sender.id == 78835349 ||
       github.event.sender.id == 24879490 ||
+      github.event.sender.id == 7981792  ||
       github.event.sender.id == 13250462
     steps:
       - uses: actions/checkout@v2
