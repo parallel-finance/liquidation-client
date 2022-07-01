@@ -73,7 +73,7 @@ jobs:
 
   call-cloudformation-infra-deployment:
     needs: deploy
-    uses: ./.github/workflows/shared/deploy-cloudformation-infra.yml
+    uses: ./.github/workflows/deploy-cloudformation-infra.yml
     with:
       AWS_REGION: us-east-2
       STACK_NAME: liquidation-client-para-prod

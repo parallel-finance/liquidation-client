@@ -1,4 +1,4 @@
-name: Reusable alerting deployment job
+name: Reusable CloudFormation deployment job
 
 on:
   workflow_call:
