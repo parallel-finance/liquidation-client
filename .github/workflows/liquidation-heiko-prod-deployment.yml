@@ -10,8 +10,6 @@ env:
   ECS_TASK_DEFINITION: ./heiko-task-definition.json
   ECS_TASK_DEFINITION_GPG: ./heiko-task-definition.json.gpg
   CONTAINER_NAME: liquidator-heiko-prod
-  
-  
 
 jobs:
   deploy:
@@ -48,7 +46,7 @@ jobs:
           docker build -f Dockerfile.release -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-          
+
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
@@ -56,7 +54,7 @@ jobs:
           task-definition: ${{ env.ECS_TASK_DEFINITION }}
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.build-image.outputs.image }}
-          
+
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
@@ -72,3 +70,12 @@ jobs:
           status: ${{ job.status }}
           fields: repo,message,commit,author,eventName,ref,workflow
         if: always()
+
+  call-cloudformation-infra-deployment:
+    needs: deploy
+    uses: ./.github/workflows/shared/deploy-cloudformation-infra.yml
+    with:
+      AWS_REGION: us-east-2
+      STACK_NAME: liquidation-client-heiko-prod
+      CHAIN_NAME: heiko
+    secrets: inherit

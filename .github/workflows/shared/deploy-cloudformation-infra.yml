@@ -1,0 +1,45 @@
+name: Reusable alerting deployment job
+
+on:
+  workflow_call:
+    inputs:
+      AWS_REGION:
+        required: true
+        type: string
+      STACK_NAME:
+        required: true
+        type: string
+      CHAIN_NAME:
+        required: true
+        type: string
+    secrets:
+      AWSACCESSKEYID:
+        required: true
+      AWSSECRETACCESSKEY:
+        required: true
+      PagerDutyIntegrationKey:
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy AWS Infra by using CloudFormation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWSACCESSKEYID }}
+          aws-secret-access-key: ${{ secrets.AWSSECRETACCESSKEY }}
+          aws-region: ${{ inputs.AWS_REGION }}
+
+      - name: Deploy CloudFormation
+        uses: aws-actions/aws-cloudformation-github-deploy@1
+        with:
+          name: ${{ inputs.STACK_NAME }}
+          template: aws/cloudformation-template.yml
+          no-fail-on-empty-changeset: "1"
+          parameter-overrides: >-
+            PagerDutyIntegrationKey=${{ secrets.PagerDutyIntegrationKey }},
+            ChainName=${{ inputs.CHAIN_NAME }}
