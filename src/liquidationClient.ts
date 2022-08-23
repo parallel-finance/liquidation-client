@@ -13,13 +13,13 @@ const liquidationClient = (
     await liquidate(agent, target);
     const scannerWork = async () => {
       logger.debug('--------------------scanner interval--------------------');
-      logger.metric([{ MetricName: 'scanner-new-round', Value: 1 }]);
+      logger.metric({ metric: 'scanner-new-round' });
       await scan(lowRepayThreshold).catch(logger.error);
       logger.debug('--------------------scanner end--------------------');
     };
     const liquidateWork = async () => {
       logger.debug('--------------------liquidate interval--------------------');
-      logger.metric([{ MetricName: 'liquidate-new-round', Value: 1 }]);
+      logger.metric({ metric: 'liquidate-new-round' });
       await liquidate(agent).catch(logger.error);
       logger.debug('--------------------liquidate end--------------------');
     };

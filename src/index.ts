@@ -48,23 +48,22 @@ const main = async () => {
   });
   switch (mode) {
     case 'liquidation': {
-      logger.startHeartbeat();
       logger.debug(`::endpoint::> ${endpoint}`);
       const keyring = new Keyring({ type: 'sr25519' });
       const agent = keyring.addFromMnemonic(
         interactive
           ? await inquirer
-              .prompt<{ seed: string }>([
-                {
-                  type: 'password',
-                  name: 'seed',
-                  message: 'Input your seed'
-                }
-              ])
-              .then(({ seed }) => {
-                logger.debug('successful import of liquidation account');
-                return seed;
-              })
+            .prompt<{ seed: string }>([
+              {
+                type: 'password',
+                name: 'seed',
+                message: 'Input your seed'
+              }
+            ])
+            .then(({ seed }) => {
+              logger.debug('successful import of liquidation account');
+              return seed;
+            })
           : seed
       );
       logger.debug(`Signer: ${agent.address}`);
