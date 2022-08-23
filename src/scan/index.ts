@@ -15,26 +15,32 @@ const b2b = (n: BN) => new BigNumber(n.toString());
 
 export const scanAndStore =
   (api: ApiPromise, storeFuncs: LiquidationStoreFunctions) =>
-  async (lowRepayThreshold: number): Promise<void> => {
-    const borrowers = await scanLiquidationBorrowers(api)(lowRepayThreshold);
-    storeLiquidationBorrowers(storeFuncs)(borrowers);
-  };
+    async (lowRepayThreshold: number): Promise<void> => {
+      const borrowers = await scanLiquidationBorrowers(api)(lowRepayThreshold);
+      storeLiquidationBorrowers(storeFuncs)(borrowers);
+    };
 
 export const scanAndRefreshRedis =
   (api: ApiPromise, redisClient: RedisClient) =>
-  async (lowRepayThreshold: number): Promise<void> => {
-    const borrowers = await scanLiquidationBorrowers(api)(lowRepayThreshold);
-    await refreshBorrowersRedis(redisClient)(borrowers);
-  };
+    async (lowRepayThreshold: number): Promise<void> => {
+      const borrowers = await scanLiquidationBorrowers(api)(lowRepayThreshold);
+      await refreshBorrowersRedis(redisClient)(borrowers);
+    };
 
 export const scanAndReturn = (api: ApiPromise) => async (): Promise<ScanResult[]> => {
   const borrowers = await scanShortfallBorrowers(api);
   logger.debug(`SCAN:shortfallBorrowers count: ${borrowers.length}`);
   const liquidationInfo = await Promise.all(borrowers.map(({ borrower }) => calculateLiquidationInfo(api)(borrower)));
-  return zipWith(borrowers, liquidationInfo, ({ borrower, shortfall }, { loans, supplies }) => ({
-    borrower,
-    shortfall: b2b(shortfall).div(b2b(PRICE_DECIMAL)).toNumber(),
-    totalLoan: sum(loans.map((loan) => b2b(loan.value).div(b2b(PRICE_DECIMAL)).toNumber())),
-    totalCollateral: sum(supplies.map((loan) => b2b(loan.value).div(b2b(PRICE_DECIMAL)).toNumber()))
-  }));
+  return zipWith(borrowers, liquidationInfo, ({ borrower, shortfall }, { loans, supplies }) => {
+    const shortfallWithoutDecimal = b2b(shortfall).div(b2b(PRICE_DECIMAL)).toNumber()
+    if (shortfallWithoutDecimal > 1000) {
+      logger.metric([{ MetricName: 'Shortfall Too Big', Value: 1 }]);
+    }
+    return {
+      borrower,
+      shortfall: shortfallWithoutDecimal,
+      totalLoan: sum(loans.map((loan) => b2b(loan.value).div(b2b(PRICE_DECIMAL)).toNumber())),
+      totalCollateral: sum(supplies.map((loan) => b2b(loan.value).div(b2b(PRICE_DECIMAL)).toNumber()))
+    }
+  });
 };
