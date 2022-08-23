@@ -34,7 +34,7 @@ export const scanAndReturn = (api: ApiPromise) => async (): Promise<ScanResult[]
   return zipWith(borrowers, liquidationInfo, ({ borrower, shortfall }, { loans, supplies }) => {
     const shortfallWithoutDecimal = b2b(shortfall).div(b2b(PRICE_DECIMAL)).toNumber()
     if (shortfallWithoutDecimal > 1000) {
-      logger.metric([{ MetricName: 'Shortfall Too Big', Value: 1 }]);
+      logger.metric([{ MetricName: 'shortfall-too-big', Value: 1 }]);
     }
     return {
       borrower,
