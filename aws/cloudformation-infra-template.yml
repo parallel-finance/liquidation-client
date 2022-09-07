@@ -49,6 +49,25 @@ Resources:
       - Name: Chain
         Value: !Ref ChainName
 
+  LiquidateShortfallTooBigAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Trigger the PD alert when the liquidate shortfall too big.
+      Namespace: !Ref ServiceName
+      MetricName: shortfall-too-big
+      Statistic: Maximum
+      Period: '300'
+      EvaluationPeriods: '3'
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: '1'
+      InsufficientDataActions:
+        - !Ref PagerDutyTopic
+      OKActions:
+        - !Ref PagerDutyTopic
+      Dimensions:
+      - Name: Chain
+        Value: !Ref ChainName
+
   PagerDutyTopic:
     Type: AWS::SNS::Topic
     Properties:
