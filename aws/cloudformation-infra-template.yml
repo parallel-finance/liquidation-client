@@ -59,7 +59,7 @@ Resources:
       Period: '300'
       EvaluationPeriods: '3'
       ComparisonOperator: GreaterThanThreshold
-      Threshold: '?'
+      Threshold: '1'
       InsufficientDataActions:
         - !Ref PagerDutyTopic
       OKActions:
