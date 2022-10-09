@@ -1,6 +1,7 @@
 import { LiquidationBorrower } from '../types';
 import { LiquidationStoreFunctions } from '../types';
 import { logger } from '../logger';
+import { ScannerPhrase, Topics } from '../constants';
 
 const storeFunctions = (store: Loki): LiquidationStoreFunctions => {
   const getRecords = () => store.getCollection<LiquidationBorrower>('borrowers');
@@ -10,9 +11,21 @@ const storeFunctions = (store: Loki): LiquidationStoreFunctions => {
   const insertBorrower = (borrower: string) => {
     const existing = getRecords().find({ borrower: { $eq: borrower } });
     if (existing.length > 0) {
-      logger.debug(`SCAN:borrower already stored: ${borrower}`);
+      logger.info({
+        topic: Topics.Scanner,
+        phrase: ScannerPhrase.StoreShortfallBorrowers,
+        borrower,
+        stored: false,
+        msg: `${borrower} existed!`
+      });
     } else {
-      logger.debug(`SCAN:insert borrower: ${borrower}`);
+      logger.info({
+        topic: Topics.Scanner,
+        phrase: ScannerPhrase.StoreShortfallBorrowers,
+        borrower,
+        stored: true,
+        msg: `Insert ${borrower}`
+      });
       getRecords().insert({ borrower: borrower });
     }
   };

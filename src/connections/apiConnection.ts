@@ -2,6 +2,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { options } from '@parallel-finance/api';
 import { typesBundle } from '@parallel-finance/type-definitions';
 import { logger } from '../logger';
+import { Topics } from '../constants';
 
 const apiConnection = async (server: string): Promise<ApiPromise> => {
   const api = await ApiPromise.create(
@@ -19,7 +20,13 @@ const apiConnection = async (server: string): Promise<ApiPromise> => {
     api.rpc.system.name(),
     api.rpc.system.version()
   ]);
-  logger.debug(`You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
+  logger.debug({
+    topic: Topics.Client,
+    msg: 'Node connectted',
+    chain,
+    nodeName,
+    nodeVersion
+  });
   return api;
 };
 

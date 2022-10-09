@@ -2,6 +2,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { LiquidationClient } from './types';
 import { logger } from './logger';
 import setPromiseInterval from 'set-promise-interval';
+import { Topics } from './constants';
 
 const liquidationClient = (
   scan: (lowRepayThreshold: number) => Promise<void>,
@@ -12,16 +13,30 @@ const liquidationClient = (
   const start = async (scanInterval: number, liquidateInterval: number, lowRepayThreshold: number): Promise<void> => {
     await liquidate(agent, target);
     const scannerWork = async () => {
-      logger.debug('--------------------scanner interval--------------------');
-      logger.metric({ metric: 'scanner-new-round' });
+      logger.info({
+        topic: Topics.Scanner,
+        status: 'Start',
+        metric: 'scanner-new-round'
+      });
       await scan(lowRepayThreshold).catch(logger.error);
-      logger.debug('--------------------scanner end--------------------');
+      logger.info({
+        topic: Topics.Scanner,
+        status: 'End',
+        metric: 'scanner-new-round'
+      });
     };
     const liquidateWork = async () => {
-      logger.debug('--------------------liquidate interval--------------------');
-      logger.metric({ metric: 'liquidate-new-round' });
+      logger.info({
+        topic: Topics.Liquidate,
+        status: 'Start',
+        metric: 'liquidate-new-round'
+      });
       await liquidate(agent).catch(logger.error);
-      logger.debug('--------------------liquidate end--------------------');
+      logger.info({
+        topic: Topics.Liquidate,
+        status: 'End',
+        metric: 'liquidate-new-round'
+      });
     };
     setPromiseInterval(scannerWork, scanInterval);
     setPromiseInterval(liquidateWork, liquidateInterval);

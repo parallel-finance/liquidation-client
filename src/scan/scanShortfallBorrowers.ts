@@ -1,14 +1,17 @@
-import {ApiPromise} from '@polkadot/api';
-import {BN} from '@polkadot/util';
-import {isEqual, uniqWith} from 'lodash';
-import {PRICE_DECIMAL} from '../constants';
-import {logger} from '../logger';
+import { ApiPromise } from '@polkadot/api';
+import { BN } from '@polkadot/util';
+import { isEqual, uniqWith } from 'lodash';
+import { PRICE_DECIMAL, ScannerPhrase, Topics } from '../constants';
+import { logger } from '../logger';
 
-const scanShortfallBorrowers = async (api: ApiPromise): Promise<{borrower: string; shortfall: BN}[]> => {
-  logger.debug('SCAN:scan shortfall borrowers');
+const scanShortfallBorrowers = async (api: ApiPromise): Promise<{ borrower: string; shortfall: BN }[]> => {
+  logger.info({
+    topic: Topics.Scanner,
+    phrase: ScannerPhrase.ScanShortfallBorrowers
+  });
   const borrowerKeys = await api.query.loans.accountBorrows.keys();
   const borrowers = uniqWith(
-    borrowerKeys.map(({args: [, accountId]}) => accountId),
+    borrowerKeys.map(({ args: [, accountId] }) => accountId),
     isEqual
   );
 
@@ -25,14 +28,20 @@ const scanShortfallBorrowers = async (api: ApiPromise): Promise<{borrower: strin
         let effectShortfall = shortfall.gtn(0)
           ? shortfall.add(lfLiquidity)
           : lfLiquidity.gt(liquidity)
-            ? lfLiquidity.sub(liquidity)
-            : new BN(0);
+          ? lfLiquidity.sub(liquidity)
+          : new BN(0);
         let hasShortfall = effectShortfall.cmpn(0) !== 0;
-        hasShortfall && logger.debug(`SCAN:borrower: ${borrower.toHuman()}, shortfall: ${effectShortfall.div(PRICE_DECIMAL)}`);
-        return {borrower, shortfall: effectShortfall, hasShortfall};
+        hasShortfall &&
+          logger.info({
+            topic: Topics.Scanner,
+            phrase: ScannerPhrase.ScanShortfallBorrowers,
+            borrower: borrower.toHuman(),
+            shortfall: effectShortfall.div(PRICE_DECIMAL)
+          });
+        return { borrower, shortfall: effectShortfall, hasShortfall };
       })
     )
-  ).filter(({hasShortfall}) => hasShortfall);
+  ).filter(({ hasShortfall }) => hasShortfall);
 };
 
 export default scanShortfallBorrowers;

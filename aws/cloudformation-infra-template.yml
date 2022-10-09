@@ -54,12 +54,12 @@ Resources:
     Properties:
       AlarmDescription: Trigger the PD alert when the liquidate shortfall too big.
       Namespace: !Ref ServiceName
-      MetricName: shortfall-too-big
+      MetricName: borrower-shortfall
       Statistic: Maximum
       Period: '300'
       EvaluationPeriods: '3'
       ComparisonOperator: GreaterThanThreshold
-      Threshold: '1'
+      Threshold: '1000'
       InsufficientDataActions:
         - !Ref PagerDutyTopic
       OKActions:

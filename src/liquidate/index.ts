@@ -4,6 +4,7 @@ import generateLiquidation from './generateLiquidation';
 import sendLiquidation from './sendLiquidation';
 import { ApiPromise } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
+import { Topics } from '../constants';
 
 const liquidate =
   (api: ApiPromise, storeFuncs: LiquidationStoreFunctions) =>
@@ -11,24 +12,25 @@ const liquidate =
     if (borrower) {
       const liquidationBorrower = storeFuncs.shiftBorrower(borrower);
       if (!liquidationBorrower) {
-        logger.debug('LIQIDATE:Cannot get target liquidation to liquidate');
+        logger.fatal({
+          topic: Topics.Liquidate,
+          msg: 'Liquidate borrower is null which should never be!'
+        });
+        throw new Error('Unexpected null liquidation borrower');
       }
       const liquidation = await generateLiquidation(api)(liquidationBorrower);
-      logger.debug(
-        `LIQUIDATE:handling <-> [${liquidation.borrower}, ${liquidation.liquidateToken}, ${liquidation.repay}, ${liquidation.collateralToken}]`
-      );
       await sendLiquidation(api)(liquidation, agent);
     } else {
       while (!storeFuncs.isEmpty()) {
         const liquidationBorrower = storeFuncs.shiftLast();
         const liquidation = await generateLiquidation(api)(liquidationBorrower);
-        logger.debug(
-          `LIQUIDATE:handling <-> [${liquidation.borrower}, ${liquidation.liquidateToken}, ${liquidation.repay}, ${liquidation.collateralToken}]`
-        );
         await sendLiquidation(api)(liquidation, agent);
       }
     }
-    logger.debug('LIQUIDATE:There are no liquidations to run');
+    logger.debug({
+      topic: Topics.Liquidate,
+      msg: 'There are no liquidations to run'
+    });
   };
 
 export default liquidate;
