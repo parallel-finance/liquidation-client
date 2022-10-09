@@ -12,6 +12,7 @@ import liquidate from './liquidate';
 import apiConnection from './connections/apiConnection';
 import scannerClient from './scannerClient';
 import redisConnection from './connections/redisConnection';
+import { Topics } from './constants';
 
 const SCAN_INTERVAL: number = 1000 * 60; // in milliseconds
 const LIQUIDATE_INTERVAL: number = 1000 * 30; // in milliseconds
@@ -48,25 +49,31 @@ const main = async () => {
   });
   switch (mode) {
     case 'liquidation': {
-      logger.debug(`::endpoint::> ${endpoint}`);
+      logger.debug({
+        topic: Topics.Client,
+        msg: `Endpoint: ${endpoint}`
+      });
       const keyring = new Keyring({ type: 'sr25519' });
       const agent = keyring.addFromMnemonic(
         interactive
           ? await inquirer
-            .prompt<{ seed: string }>([
-              {
-                type: 'password',
-                name: 'seed',
-                message: 'Input your seed'
-              }
-            ])
-            .then(({ seed }) => {
-              logger.debug('successful import of liquidation account');
-              return seed;
-            })
+              .prompt<{ seed: string }>([
+                {
+                  type: 'password',
+                  name: 'seed',
+                  message: 'Input your seed'
+                }
+              ])
+              .then(({ seed }) => {
+                logger.debug('successful import of liquidation account');
+                return seed;
+              })
           : seed
       );
-      logger.debug(`Signer: ${agent.address}`);
+      logger.debug({
+        topic: Topics.Client,
+        msg: `Signer Address: ${agent.address}`
+      });
       const api = await apiConnection(endpoint);
       const store = liquidationStore();
       const storeFuncs = storeFunctions(store);

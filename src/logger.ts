@@ -14,15 +14,15 @@ AWS.config.update({ region: 'us-east-2' });
 
 export let logger: Logger<{
   customLevels: {
-    metric: number
-  }
+    metric: number;
+  };
 }> = null;
 
 export const initLogger = (config: LoggerConfig) => {
   const cloudwatchClient = new CloudWatch();
   const putMetricData = (data: MetricData) => {
     const params: PutMetricDataInput = {
-      MetricData: data.map(e => ({
+      MetricData: data.map((e) => ({
         ...e,
         Dimensions: [
           {
@@ -37,7 +37,7 @@ export const initLogger = (config: LoggerConfig) => {
     cloudwatchClient
       .putMetricData(params)
       .promise()
-      .catch(e => console.error(e));
+      .catch((e) => console.error(e));
   };
 
   const transport =
@@ -57,11 +57,11 @@ export const initLogger = (config: LoggerConfig) => {
   const instance = pino(
     {
       hooks: {
-        logMethod(args, method,) {
-          if (typeof args[0] === 'object') {
+        logMethod(args: any, method: any) {
+          if (typeof args[0] === 'object' && 'metric' in args[0]) {
             const payload = args[0];
-            payload['metric'] &&
-              putMetricData([{ MetricName: payload['metric'], Value: payload['value'] || 1 }]);
+            payload.value = 'value' in payload ? payload['value'] : 1;
+            putMetricData([{ MetricName: payload['metric'], Value: payload['value'] }]);
           }
           return method.apply(this, args as any);
         }
@@ -74,5 +74,5 @@ export const initLogger = (config: LoggerConfig) => {
   );
 
   logger = instance;
-  return logger
+  return logger;
 };
