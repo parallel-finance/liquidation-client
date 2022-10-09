@@ -1,46 +1,28 @@
-import winston from 'winston';
-import { CloudWatch, default as AWS } from 'aws-sdk';
-import type { MetricData, PutMetricDataInput } from 'aws-sdk/clients/cloudwatch';
-import { Metrics } from './constants';
+import { default as pino } from 'pino';
+import { default as AWS, CloudWatch } from 'aws-sdk';
+import { MERTRIC_NAMESPACE } from './constants';
 
-type Logger = ReturnType<typeof winston.createLogger> & {
-  metric: (metric: MetricData) => void;
-  startHeartbeat: () => void;
-};
+import type { MetricData, PutMetricDataInput } from 'aws-sdk/clients/cloudwatch';
+import type { Logger } from 'pino';
 
 interface LoggerConfig {
   chain: string;
-  heartbeatInterval: number;
+  heartbeatInterval: number; //FIXME(alannotnerd): Deprecated
 }
 
 AWS.config.update({ region: 'us-east-2' });
 
-export let logger: Logger = null;
+export let logger: Logger<{
+  customLevels: {
+    metric: number
+  }
+}> = null;
 
 export const initLogger = (config: LoggerConfig) => {
   const cloudwatchClient = new CloudWatch();
-  let heartbeatHandle: NodeJS.Timer | null = null;
-  let instance: any = winston.createLogger({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.timestamp(),
-      winston.format.json(),
-      winston.format.printf((info) => `${info.timestamp} | ${info.level}: ${JSON.stringify(info.message)}`)
-    ),
-    defaultMeta: { service: 'liquidation-client' },
-    transports: [
-      new winston.transports.File({
-        filename: 'logs/error.log',
-        level: 'error'
-      }),
-      new winston.transports.File({ filename: 'logs/combined.log' }),
-      new winston.transports.Console({ level: 'debug' })
-    ]
-  });
-
-  instance.metric = (metricData: MetricData) => {
+  const putMetricData = (data: MetricData) => {
     const params: PutMetricDataInput = {
-      MetricData: metricData.map((e) => ({
+      MetricData: data.map(e => ({
         ...e,
         Dimensions: [
           {
@@ -49,22 +31,48 @@ export const initLogger = (config: LoggerConfig) => {
           }
         ]
       })),
-      Namespace: 'liquidation-client'
+      Namespace: MERTRIC_NAMESPACE
     };
-    // It's not neccessary to wait this finish.
+
     cloudwatchClient
       .putMetricData(params)
       .promise()
-      .catch((e) => instance.error(e));
+      .catch(e => console.error(e));
   };
 
-  instance.startHeartbeat = () => {
-    if (!heartbeatHandle) {
-      heartbeatHandle = setInterval(
-        () => instance.metric([{ MetricName: Metrics.Heartbeat, Value: 1 }]),
-        config.heartbeatInterval
-      );
-    }
-  };
+  const transport =
+    process.env.DEV_LOGS &&
+    pino.transport({
+      targets: [
+        {
+          level: 'info',
+          target: 'pino-pretty',
+          options: {
+            colorize: true
+          }
+        }
+      ]
+    });
+
+  const instance = pino(
+    {
+      hooks: {
+        logMethod(args, method,) {
+          if (typeof args[0] === 'object') {
+            const payload = args[0];
+            payload['metric'] &&
+              putMetricData([{ MetricName: payload['metric'], Value: payload['value'] || 1 }]);
+          }
+          return method.apply(this, args as any);
+        }
+      },
+      customLevels: {
+        metric: 100
+      }
+    },
+    transport
+  );
+
   logger = instance;
+  return logger
 };

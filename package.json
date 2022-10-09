@@ -26,10 +26,11 @@
         "interval-promise": "^1.4.0",
         "lodash": "^4.17.21",
         "lokijs": "^1.5.12",
+        "pino": "^8.4.2",
+        "pino-pretty": "^9.0.1",
         "redis": "^4.0.6",
         "set-promise-interval": "^1.0.8",
-        "ts-node": "^10.4.0",
-        "winston": "^3.3.3"
+        "ts-node": "^10.4.0"
     },
     "devDependencies": {
         "@types/bignumber.js": "^5.0.0",
@@ -37,6 +38,7 @@
         "@types/lodash": "^4.14.171",
         "@types/lokijs": "^1.5.7",
         "@types/node": "^16.11.4",
+        "@types/pino": "^7.0.5",
         "@types/redis": "^4.0.11",
         "@typescript-eslint/eslint-plugin": "^4.28.3",
         "@typescript-eslint/parser": "^4.28.3",
