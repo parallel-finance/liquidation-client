@@ -63,7 +63,7 @@ export const initLogger = (config: LoggerConfig) => {
             payload.value = 'value' in payload ? payload['value'] : 1;
             putMetricData([{ MetricName: payload['metric'], Value: payload['value'] }]);
           }
-          return method.apply(this, args as any);
+          return method.apply(instance, args as any);
         }
       },
       customLevels: {
