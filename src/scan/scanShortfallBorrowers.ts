@@ -5,7 +5,7 @@ import { PRICE_DECIMAL, ScannerPhrase, Topics } from '../constants';
 import { logger } from '../logger';
 
 const scanShortfallBorrowers = async (api: ApiPromise): Promise<{ borrower: string; shortfall: BN }[]> => {
-  logger.info({
+  logger.debug({
     topic: Topics.Scanner,
     phrase: ScannerPhrase.ScanShortfallBorrowers
   });
@@ -36,7 +36,7 @@ const scanShortfallBorrowers = async (api: ApiPromise): Promise<{ borrower: stri
             topic: Topics.Scanner,
             phrase: ScannerPhrase.ScanShortfallBorrowers,
             borrower: borrower.toHuman(),
-            shortfall: effectShortfall.div(PRICE_DECIMAL)
+            shortfall: effectShortfall.div(PRICE_DECIMAL).toString()
           });
         return { borrower, shortfall: effectShortfall, hasShortfall };
       })
